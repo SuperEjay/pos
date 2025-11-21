@@ -210,7 +210,7 @@ export function POSInterface() {
 
     const orderData = {
       customer_name: customerName.trim(),
-      status: 'completed' as const,
+      status: 'pending' as const,
       order_date: new Date().toISOString().split('T')[0],
       order_type: orderType,
       delivery_fee: orderType === 'delivery' ? deliveryFee : null,
