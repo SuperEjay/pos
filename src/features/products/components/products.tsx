@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 import { PlusIcon } from 'lucide-react'
 import {
@@ -23,39 +23,50 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [viewingProductId, setViewingProductId] = useState<string | null>(null)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
+  const [cloningFromProductId, setCloningFromProductId] = useState<string | null>(null)
   const { data: products } = useGetProducts()
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct()
   const { mutate: toggleStatus } = useToggleProductStatus()
 
   // map the products to the ProductTableRow type
-  const mappedProducts: Array<ProductTableRow> =
-    products?.map((product: any) => ({
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      category_id: product.category_id,
-      sku: product.sku,
-      price: product.price,
-      stock: product.stock,
-      created_at: product.created_at,
-      updated_at: product.updated_at || product.created_at,
-      category_name: product.category_name,
-      variants_count: product.variants_count || 0,
-      is_active: product.is_active ? 'Active' : 'Inactive',
-      is_active_bool: product.is_active,
-    })) ?? []
+  const mappedProducts: Array<ProductTableRow> = useMemo(
+    () =>
+      products?.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        category_id: product.category_id,
+        sku: product.sku,
+        price: product.price,
+        stock: product.stock,
+        created_at: product.created_at,
+        updated_at: product.updated_at || product.created_at,
+        category_name: product.category_name,
+        variants_count: product.variants_count || 0,
+        is_active: product.is_active ? 'Active' : 'Inactive',
+        is_active_bool: product.is_active,
+      })) ?? [],
+    [products],
+  )
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     setEditingProduct(null)
+    setCloningFromProductId(null)
     setIsModalOpen(true)
-  }
+  }, [])
 
-  const handleView = (productId: string) => {
+  const handleClone = useCallback((productId: string) => {
+    setEditingProduct(null)
+    setCloningFromProductId(productId)
+    setIsModalOpen(true)
+  }, [])
+
+  const handleView = useCallback((productId: string) => {
     setViewingProductId(productId)
     setIsViewDialogOpen(true)
-  }
+  }, [])
 
-  const handleEdit = (product: ProductTableRow) => {
+  const handleEdit = useCallback((product: ProductTableRow) => {
     setEditingProduct({
       id: product.id,
       name: product.name,
@@ -68,28 +79,45 @@ export default function Products() {
       created_at: product.created_at,
       updated_at: product.updated_at,
     })
+    setCloningFromProductId(null)
     setIsModalOpen(true)
-  }
+  }, [])
 
-  const handleDeleteClick = (productId: string) => {
+  const handleDeleteClick = useCallback((productId: string) => {
     setProductToDelete(productId)
     setIsDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = useCallback(() => {
     if (productToDelete) {
       deleteProduct(productToDelete)
       setProductToDelete(null)
     }
-  }
+  }, [productToDelete, deleteProduct])
 
-  const handleToggleStatus = (productId: string, currentStatus: boolean) => {
-    toggleStatus({ id: productId, isActive: !currentStatus })
-  }
+  const handleToggleStatus = useCallback(
+    (productId: string, currentStatus: boolean) => {
+      toggleStatus({ id: productId, isActive: !currentStatus })
+    },
+    [toggleStatus],
+  )
 
-  const productToDeleteName =
-    productToDelete &&
-    mappedProducts.find((prod) => prod.id === productToDelete)?.name
+  const handleModalOpenChange = useCallback(
+    (open: boolean) => {
+      setIsModalOpen(open)
+      if (!open) {
+        setCloningFromProductId(null)
+      }
+    },
+    [],
+  )
+
+  const productToDeleteName = useMemo(
+    () =>
+      productToDelete &&
+      mappedProducts.find((prod) => prod.id === productToDelete)?.name,
+    [productToDelete, mappedProducts],
+  )
 
   return (
     <>
@@ -113,14 +141,16 @@ export default function Products() {
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
             onToggleStatus={handleToggleStatus}
+            onClone={handleClone}
           />
         </div>
       </div>
 
       <ProductModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={handleModalOpenChange}
         product={editingProduct}
+        cloneFrom={cloningFromProductId}
       />
 
       <ProductViewDialog

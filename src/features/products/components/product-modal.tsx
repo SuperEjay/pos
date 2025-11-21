@@ -32,17 +32,20 @@ interface ProductModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   product?: Product | null
+  cloneFrom?: string | null
 }
 
 export function ProductModal({
   open,
   onOpenChange,
   product,
+  cloneFrom,
 }: ProductModalProps) {
   const isEditing = Boolean(product)
+  const isCloning = Boolean(cloneFrom && !product)
   const { data: categories } = useGetCategories()
   const { data: productWithVariants, isLoading: isLoadingProduct } =
-    useGetProduct(product?.id || null)
+    useGetProduct(product?.id || cloneFrom || null)
 
   const {
     register,
@@ -77,8 +80,8 @@ export function ProductModal({
   // Reset form when modal opens/closes or product changes
   useEffect(() => {
     if (open) {
-      if (product && productWithVariants && !isLoadingProduct) {
-        // Load product data with variants
+      if ((product || cloneFrom) && productWithVariants && !isLoadingProduct) {
+        // Load product data with variants (for editing or cloning)
         const variants = (productWithVariants.variants || []).map(
           (variant: any) => ({
             name: variant.name,
@@ -93,15 +96,15 @@ export function ProductModal({
         )
 
         reset({
-          name: product.name,
-          description: product.description || '',
-          category_id: product.category_id,
-          sku: product.sku,
-          price: product.price,
-          stock: product.stock,
+          name: isCloning ? `${productWithVariants.name} (Copy)` : productWithVariants.name,
+          description: productWithVariants.description || '',
+          category_id: productWithVariants.category_id,
+          sku: isCloning ? null : productWithVariants.sku, // Clear SKU when cloning
+          price: productWithVariants.price,
+          stock: productWithVariants.stock,
           variants: variants,
         })
-      } else if (!product) {
+      } else if (!product && !cloneFrom) {
         reset({
           name: '',
           description: '',
@@ -113,7 +116,7 @@ export function ProductModal({
         })
       }
     }
-  }, [open, product, productWithVariants, isLoadingProduct, reset])
+  }, [open, product, cloneFrom, productWithVariants, isLoadingProduct, reset, isCloning])
 
   const { mutate: addProduct, isPending: isAdding } = useAddProduct()
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
@@ -164,12 +167,18 @@ export function ProductModal({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Edit Product' : 'Create Product'}
+            {isEditing
+              ? 'Edit Product'
+              : isCloning
+                ? 'Clone Product'
+                : 'Create Product'}
           </DialogTitle>
           <DialogDescription>
             {isEditing
               ? 'Update the product information below.'
-              : 'Add a new product to your system. Fill in the details below.'}
+              : isCloning
+                ? 'Create a new product based on the selected product. You can modify the details below.'
+                : 'Add a new product to your system. Fill in the details below.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -436,7 +445,9 @@ export function ProductModal({
                   : 'Creating...'
                 : isEditing
                   ? 'Update Product'
-                  : 'Create Product'}
+                  : isCloning
+                    ? 'Clone Product'
+                    : 'Create Product'}
             </Button>
           </DialogFooter>
         </form>

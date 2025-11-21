@@ -6,6 +6,7 @@ import {
   ToggleLeft,
   ToggleRight,
   TrashIcon,
+  CopyIcon,
 } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Product } from '@/features/products/types'
@@ -34,6 +35,7 @@ interface ProductsTableProps {
   onView: (productId: string) => void
   onDelete: (productId: string) => void
   onToggleStatus: (productId: string, currentStatus: boolean) => void
+  onClone: (productId: string) => void
 }
 
 export const ProductsTable = memo(function ProductsTable({
@@ -42,6 +44,7 @@ export const ProductsTable = memo(function ProductsTable({
   onView,
   onDelete,
   onToggleStatus,
+  onClone,
 }: ProductsTableProps) {
   const handleView = useCallback(
     (productId: string) => {
@@ -69,6 +72,13 @@ export const ProductsTable = memo(function ProductsTable({
       onToggleStatus(productId, currentStatus)
     },
     [onToggleStatus],
+  )
+
+  const handleClone = useCallback(
+    (productId: string) => {
+      onClone(productId)
+    },
+    [onClone],
   )
 
   const columns: Array<ColumnDef<ProductTableRow>> = useMemo(
@@ -159,6 +169,15 @@ export const ProductsTable = memo(function ProductsTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
+                  handleClone(product.id)
+                }}
+              >
+                <CopyIcon className="mr-2 h-4 w-4" />
+                Clone
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
                   handleToggleStatus(product.id, isActive)
                 }}
               >
@@ -191,7 +210,7 @@ export const ProductsTable = memo(function ProductsTable({
       },
     },
   ],
-    [handleView, handleEdit, handleDelete, handleToggleStatus],
+    [handleView, handleEdit, handleDelete, handleToggleStatus, handleClone],
   )
 
   return (
