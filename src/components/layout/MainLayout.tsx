@@ -12,13 +12,15 @@ export default function MainLayout({
     <div className={cn('flex flex-col min-h-screen')}>
       <SidebarProvider>
         <SideBar variant="floating" />
-        <main className="bg-gray-100 p-6 w-full flex flex-col flex-1 gap-4">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger />
+        <main className="bg-stone-100 p-6 w-full flex flex-col flex-1 gap-6">
+          <div className="flex items-center justify-end gap-2">
+            <SidebarTrigger className="text-gray-500" />
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
-            <p className="text-sm font-medium">Welcome, John Doe</p>
+            <p className="text-sm font-medium text-gray-500">
+              Welcome, John Doe
+            </p>
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
-            <p className="text-sm font-medium">
+            <p className="text-sm font-medium text-gray-500 ">
               {new Date().toLocaleDateString()}{' '}
               {new Date().toLocaleTimeString()}
             </p>

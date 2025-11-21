@@ -1,4 +1,5 @@
 import { ChevronRight, List, Package, ShoppingCart } from 'lucide-react'
+import { useLocation } from '@tanstack/react-router'
 
 import {
   Collapsible,
@@ -17,6 +18,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
+
 import { cn } from '@/lib/utils'
 
 // Menu items.
@@ -50,6 +52,7 @@ export default function SideBar({
 }: {
   variant: 'inset' | 'floating'
 }) {
+  const { pathname } = useLocation()
   return (
     <Sidebar variant={variant} className="">
       <SidebarContent>
@@ -63,12 +66,20 @@ export default function SideBar({
                 <>
                   {item.items && (
                     <Collapsible
-                      defaultOpen={false}
+                      defaultOpen={item.items.some((subItem) =>
+                        pathname.startsWith(subItem.url),
+                      )}
                       className="group/collapsible"
                     >
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton>
+                          <SidebarMenuButton
+                            isActive={pathname.startsWith(item.url)}
+                            className={cn(
+                              pathname.startsWith(item.url) &&
+                                'bg-sidebar-accent text-sidebar-accent-foreground',
+                            )}
+                          >
                             <item.icon />
                             <span>{item.title}</span>
                             <ChevronRight
@@ -83,7 +94,10 @@ export default function SideBar({
                           <SidebarMenuSub>
                             {item.items.map((subItem) => (
                               <SidebarMenuSubItem key={subItem.title}>
-                                <SidebarMenuButton asChild>
+                                <SidebarMenuButton
+                                  isActive={pathname.startsWith(subItem.url)}
+                                  asChild
+                                >
                                   <a href={subItem.url}>
                                     <subItem.icon />
                                     <span>{subItem.title}</span>
@@ -99,7 +113,10 @@ export default function SideBar({
 
                   {!item.items && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
+                      <SidebarMenuButton
+                        isActive={pathname.startsWith(item.url)}
+                        asChild
+                      >
                         <a href={item.url}>
                           <item.icon />
                           <span>{item.title}</span>
