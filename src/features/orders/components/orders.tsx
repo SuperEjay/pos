@@ -1,10 +1,7 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 
 import { PlusIcon } from 'lucide-react'
-import {
-  useDeleteOrder,
-  useGetOrders,
-} from '../hooks'
+import { useDeleteOrder, useGetOrders } from '../hooks'
 import { OrderModal } from './order-modal'
 import { OrderViewDialog } from './order-view-dialog'
 import { OrdersTable } from './orders-table'
@@ -159,4 +156,3 @@ export default function Orders() {
     </>
   )
 }
-

@@ -210,7 +210,7 @@ export function POSInterface() {
 
     const orderData = {
       customer_name: customerName.trim(),
-      status: 'pending' as const,
+      status: 'pending' as const, // Explicitly set to pending for POS orders
       order_date: new Date().toISOString().split('T')[0],
       order_type: orderType,
       delivery_fee: orderType === 'delivery' ? deliveryFee : null,
@@ -223,6 +223,9 @@ export function POSInterface() {
         price: item.price,
       })),
     }
+
+    // Debug: Log the order data to verify status
+    console.log('POS Order Data:', { ...orderData, items: orderData.items.length })
 
     createOrder(orderData, {
       onSuccess: () => {

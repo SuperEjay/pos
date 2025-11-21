@@ -149,12 +149,13 @@ export const addOrder = async (order: OrderFormValues) => {
 
   const total = itemsTotal + deliveryFee
 
-  // Insert order
+  // Insert order - explicitly use the status from order object
+  // This ensures the status passed from POS interface ('pending') is preserved
   const { data: orderData, error: orderError } = await supabase
     .from('orders')
     .insert({
       customer_name: order.customer_name,
-      status: order.status,
+      status: order.status, // Use the status directly from the order object
       order_date: order.order_date,
       total: total,
       order_type: order.order_type || null,
