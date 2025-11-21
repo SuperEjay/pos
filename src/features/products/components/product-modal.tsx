@@ -1,0 +1,536 @@
+import { useEffect } from 'react'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { PlusIcon, TrashIcon } from 'lucide-react'
+import { useAddProduct, useUpdateProduct } from '../hooks'
+import { productFormSchema } from '../schema/product-form'
+import type { ProductFormValues } from '../schema/product-form'
+import type { Product } from '../types/product'
+import { useGetCategories } from '@/features/categories/hooks'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+
+interface ProductModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  product?: Product | null
+}
+
+export function ProductModal({
+  open,
+  onOpenChange,
+  product,
+}: ProductModalProps) {
+  const isEditing = Boolean(product)
+  const { data: categories } = useGetCategories()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+    setValue,
+    watch,
+    control,
+  } = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      category_id: '',
+      sku: null,
+      price: null,
+      stock: null,
+      variants: [],
+    },
+  })
+
+  const {
+    fields: variantFields,
+    append: appendVariant,
+    remove: removeVariant,
+  } = useFieldArray({
+    control,
+    name: 'variants',
+  })
+
+  // Reset form when modal opens/closes or product changes
+  useEffect(() => {
+    if (open) {
+      if (product) {
+        setValue('name', product.name)
+        setValue('description', product.description || '')
+        setValue('category_id', product.category_id)
+        setValue('sku', product.sku)
+        setValue('price', product.price)
+        setValue('stock', product.stock)
+        // Note: Variants would need to be loaded separately if editing
+        // For now, we'll start with empty variants on edit
+        setValue('variants', [])
+      } else {
+        reset({
+          name: '',
+          description: '',
+          category_id: '',
+          sku: null,
+          price: null,
+          stock: null,
+          variants: [],
+        })
+      }
+    }
+  }, [open, product, setValue, reset])
+
+  const { mutate: addProduct, isPending: isAdding } = useAddProduct()
+  const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
+  const isPending = isAdding || isUpdating
+
+  const onSubmit = (data: ProductFormValues) => {
+    if (isEditing && product) {
+      updateProduct(
+        { id: product.id, ...data },
+        {
+          onSuccess: () => {
+            handleOpenChange(false)
+            reset()
+          },
+        },
+      )
+    } else {
+      addProduct(data, {
+        onSuccess: () => {
+          handleOpenChange(false)
+          reset()
+        },
+      })
+    }
+  }
+
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!isSubmitting) {
+      onOpenChange(newOpen)
+      if (!newOpen) {
+        reset()
+      }
+    }
+  }
+
+  const addVariant = () => {
+    appendVariant({
+      name: '',
+      price: null,
+      stock: null,
+      sku: null,
+      options: [] as Array<{ name: string; value: string }>,
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {isEditing ? 'Edit Product' : 'Create Product'}
+          </DialogTitle>
+          <DialogDescription>
+            {isEditing
+              ? 'Update the product information below.'
+              : 'Add a new product to your system. Fill in the details below.'}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">
+                Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                {...register('name')}
+                placeholder="Enter product name"
+                disabled={isSubmitting}
+                className={cn(
+                  'bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200',
+                  errors.name &&
+                    'border-destructive focus-visible:border-destructive',
+                )}
+              />
+              {errors.name && (
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description">
+                Description <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="description"
+                {...register('description')}
+                placeholder="Enter product description"
+                rows={4}
+                disabled={isSubmitting}
+                className={cn(
+                  'bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200',
+                  errors.description &&
+                    'border-destructive focus-visible:border-destructive',
+                )}
+              />
+              {errors.description && (
+                <p className="text-sm text-destructive">
+                  {errors.description.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="category_id">
+                Category <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={watch('category_id')}
+                onValueChange={(value) => setValue('category_id', value)}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger
+                  className={cn(
+                    'bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full',
+                    errors.category_id &&
+                      'border-destructive focus-visible:border-destructive',
+                  )}
+                >
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category_id && (
+                <p className="text-sm text-destructive">
+                  {errors.category_id.message}
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  {...register('sku')}
+                  placeholder="Enter SKU (optional)"
+                  disabled={isSubmitting}
+                  className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200"
+                />
+                {errors.sku && (
+                  <p className="text-sm text-destructive">
+                    {errors.sku.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="price">Price</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  {...register('price', { valueAsNumber: true })}
+                  placeholder="Enter price (optional)"
+                  disabled={isSubmitting}
+                  className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200"
+                />
+                {errors.price && (
+                  <p className="text-sm text-destructive">
+                    {errors.price.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="stock">Stock</Label>
+                <Input
+                  id="stock"
+                  type="number"
+                  {...register('stock', { valueAsNumber: true })}
+                  placeholder="Enter stock (optional)"
+                  disabled={isSubmitting}
+                  className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200"
+                />
+                {errors.stock && (
+                  <p className="text-sm text-destructive">
+                    {errors.stock.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label>Variants</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addVariant}
+                  disabled={isSubmitting}
+                  className="border-stone-300 text-stone-700 hover:bg-stone-100"
+                >
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Add Variant
+                </Button>
+              </div>
+
+              {variantFields.map((variant, variantIndex) => (
+                <div
+                  key={variant.id}
+                  className="border border-stone-200 rounded-lg p-4 space-y-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Variant {variantIndex + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeVariant(variantIndex)}
+                      disabled={isSubmitting}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>
+                        Variant Name <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        {...register(
+                          `variants.${variantIndex}.name` as const,
+                        )}
+                        placeholder="Enter variant name"
+                        disabled={isSubmitting}
+                        className="bg-white border-stone-300"
+                      />
+                      {errors.variants?.[variantIndex]?.name && (
+                        <p className="text-sm text-destructive">
+                          {errors.variants[variantIndex]?.name?.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>SKU</Label>
+                      <Input
+                        {...register(
+                          `variants.${variantIndex}.sku` as const,
+                        )}
+                        placeholder="Enter SKU (optional)"
+                        disabled={isSubmitting}
+                        className="bg-white border-stone-300"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Price</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...register(
+                          `variants.${variantIndex}.price` as const,
+                          { valueAsNumber: true },
+                        )}
+                        placeholder="Enter price (optional)"
+                        disabled={isSubmitting}
+                        className="bg-white border-stone-300"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label>Stock</Label>
+                      <Input
+                        type="number"
+                        {...register(
+                          `variants.${variantIndex}.stock` as const,
+                          { valueAsNumber: true },
+                        )}
+                        placeholder="Enter stock (optional)"
+                        disabled={isSubmitting}
+                        className="bg-white border-stone-300"
+                      />
+                    </div>
+                  </div>
+
+                  <VariantOptions
+                    variantIndex={variantIndex}
+                    register={register}
+                    control={control}
+                    errors={errors}
+                    isSubmitting={isSubmitting}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={isPending}
+              className="border-stone-300 text-stone-700 hover:bg-stone-100"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-stone-700 text-white hover:bg-stone-800"
+            >
+              {isPending
+                ? isEditing
+                  ? 'Updating...'
+                  : 'Creating...'
+                : isEditing
+                  ? 'Update Product'
+                  : 'Create Product'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// VariantOptions component for managing options within a variant
+function VariantOptions({
+  variantIndex,
+  register,
+  control,
+  errors,
+  isSubmitting,
+}: {
+  variantIndex: number
+  register: any
+  control: any
+  errors: any
+  isSubmitting: boolean
+}) {
+  const {
+    fields: optionFields,
+    append: appendOption,
+    remove: removeOption,
+  } = useFieldArray({
+    control,
+    name: `variants.${variantIndex}.options` as const,
+  })
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm">Options</Label>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            appendOption({
+              name: '',
+              value: '',
+            })
+          }
+          disabled={isSubmitting}
+          className="border-stone-300 text-stone-700 hover:bg-stone-100 h-8"
+        >
+          <PlusIcon className="w-3 h-3 mr-1" />
+          Add Option
+        </Button>
+      </div>
+
+      {optionFields.map((option, optionIndex) => (
+        <div
+          key={option.id}
+          className="flex gap-2 items-start p-2 bg-stone-50 rounded"
+        >
+          <div className="flex-1 grid grid-cols-2 gap-2">
+            <div className="grid gap-1">
+              <Input
+                {...register(
+                  `variants.${variantIndex}.options.${optionIndex}.name` as const,
+                )}
+                placeholder="Option name"
+                disabled={isSubmitting}
+                className="bg-white border-stone-300 h-8"
+              />
+              {errors.variants?.[variantIndex]?.options?.[optionIndex]?.name && (
+                <p className="text-xs text-destructive">
+                  {
+                    errors.variants[variantIndex]?.options?.[optionIndex]?.name
+                      ?.message
+                  }
+                </p>
+              )}
+            </div>
+            <div className="grid gap-1">
+              <Input
+                {...register(
+                  `variants.${variantIndex}.options.${optionIndex}.value` as const,
+                )}
+                placeholder="Option value"
+                disabled={isSubmitting}
+                className="bg-white border-stone-300 h-8"
+              />
+              {errors.variants?.[variantIndex]?.options?.[optionIndex]
+                ?.value && (
+                <p className="text-xs text-destructive">
+                  {
+                    errors.variants[variantIndex]?.options?.[optionIndex]?.value
+                      ?.message
+                  }
+                </p>
+              )}
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => removeOption(optionIndex)}
+            disabled={isSubmitting}
+            className="text-destructive hover:text-destructive h-8 w-8 p-0"
+          >
+            <TrashIcon className="w-3 h-3" />
+          </Button>
+        </div>
+      ))}
+    </div>
+  )
+}
+
