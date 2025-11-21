@@ -1,93 +1,118 @@
-import { Link } from '@tanstack/react-router'
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CircleIcon,
-  PackageIcon,
-  ShoppingCartIcon,
-} from 'lucide-react'
+import { ChevronRight, List, Package, ShoppingCart } from 'lucide-react'
 
-const mainMenuItems = [
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../ui/collapsible'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+} from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
+
+// Menu items.
+const items = [
   {
-    label: 'Orders',
-    icon: ShoppingCartIcon,
-    href: '/',
+    title: 'Orders',
+    url: '/orders',
+    icon: ShoppingCart,
   },
   {
-    label: 'Manage Products',
-    icon: PackageIcon,
-    href: '#',
-    children: [
+    title: 'Manage Products',
+    url: '#',
+    icon: Package,
+    items: [
       {
-        label: 'Products',
-        icon: CircleIcon,
-        href: '/products',
+        title: 'Categories',
+        url: '/categories',
+        icon: List,
       },
       {
-        label: 'Categories',
-        icon: CircleIcon,
-        href: '/categories',
+        title: 'Products',
+        url: '/products',
+        icon: Package,
       },
     ],
   },
 ]
 
-export default function SideBar() {
+export default function SideBar({
+  variant,
+}: {
+  variant: 'inset' | 'floating'
+}) {
   return (
-    <aside className="bg-[#f7f7f7] h-screen w-64 relative border-r border-[#e5e5e5] p-4">
-      <div className="flex flex-col gap-6 h-16 py-4">
-        <h3 className="text-2xl font-medium">Saledash</h3>
+    <Sidebar variant={variant} className="">
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-gray-500 font-medium">
+            Main Menu
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <>
+                  {item.items && (
+                    <Collapsible
+                      defaultOpen={false}
+                      className="group/collapsible"
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton>
+                            <item.icon />
+                            <span>{item.title}</span>
+                            <ChevronRight
+                              className={cn(
+                                'w-4 h-4 transition-transform duration-300 ml-auto',
+                                'group-data-[state=open]/collapsible:rotate-90',
+                              )}
+                            />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {item.items.map((subItem) => (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuButton asChild>
+                                  <a href={subItem.url}>
+                                    <subItem.icon />
+                                    <span>{subItem.title}</span>
+                                  </a>
+                                </SidebarMenuButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  )}
 
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium text-[#d2d2d2]">Main Menu</p>
-          <div className="flex flex-col gap-[20px] mt-2 ml-2">
-            {mainMenuItems.map((item) => (
-              <>
-                {item.children && (
-                  <div className="flex flex-col gap-2">
-                    <p className="flex items-center gap-2 text-sm font-medium text-[#898989] mb-2">
-                      <item.icon size={16} />
-                      {item.label}
-                      <ChevronRightIcon size={16} className="ml-auto" />
-                    </p>
-                    <div className="flex flex-col gap-4 ml-6">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.href}
-                          to={child.href}
-                          className="flex items-center gap-2 text-[#898989]"
-                        >
-                          <child.icon size={12} />
-                          <p className="text-[12px] font-medium">
-                            {child.label}
-                          </p>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {!item.children && (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    className="flex items center gap-2 text-[#898989]"
-                  >
-                    <item.icon size={14} />
-                    <p className="text-[14px] font-medium">{item.label}</p>
-                  </Link>
-                )}
-              </>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Toggle SideBar */}
-      <div className="absolute bg-white h-8 w-8 rounded-full shadow-lg top-8 -right-4 border border-gray-200">
-        <div className="flex items-center justify-center h-full">
-          <ChevronLeftIcon className="w-6 h-6" />
-        </div>
-      </div>
-    </aside>
+                  {!item.items && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton asChild>
+                        <a href={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                </>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
   )
 }
