@@ -1,45 +1,27 @@
 import { useState } from 'react'
 
-import {
-  MoreHorizontal,
-  PencilIcon,
-  PlusIcon,
-  TrashIcon,
-  ToggleLeft,
-  ToggleRight,
-} from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 import {
   useDeleteCategory,
   useGetCategories,
   useToggleCategoryStatus,
 } from '../hooks'
 import { CategoryModal } from './category-modal'
+import { CategoriesTable } from './categories-table'
+import type { CategoryTableRow } from './categories-table'
 import type { Category } from '@/features/categories/types'
 
-import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
-import { DataTable } from '@/components/ui/data-table'
 import { Header } from '@/components'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-
-type CategoryTableRow = Category & {
-  is_active: string
-  is_active_bool: boolean
-}
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 export default function Categories() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
   const { data: categories } = useGetCategories()
-  const { mutate: deleteCategory } = useDeleteCategory()
+  const { mutate: deleteCategory, isPending: isDeleting } = useDeleteCategory()
   const { mutate: toggleStatus } = useToggleCategoryStatus()
 
   // map the categories to the Category type
@@ -70,9 +52,15 @@ export default function Categories() {
     setIsModalOpen(true)
   }
 
-  const handleDelete = (categoryId: string) => {
-    if (window.confirm('Are you sure you want to delete this category?')) {
-      deleteCategory(categoryId)
+  const handleDeleteClick = (categoryId: string) => {
+    setCategoryToDelete(categoryId)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = () => {
+    if (categoryToDelete) {
+      deleteCategory(categoryToDelete)
+      setCategoryToDelete(null)
     }
   }
 
@@ -80,116 +68,9 @@ export default function Categories() {
     toggleStatus({ id: categoryId, isActive: !currentStatus })
   }
 
-  const columns: Array<ColumnDef<CategoryTableRow>> = [
-    {
-      accessorKey: 'name',
-      header: 'Name',
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue('name')}</div>
-      ),
-    },
-    {
-      accessorKey: 'description',
-      header: 'Description',
-      cell: ({ row }) => (
-        <div className="text-muted-foreground">
-          {row.getValue('description') || 'No description'}
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'is_active',
-      header: 'Status',
-      cell: ({ row }) => (
-        <Badge
-          variant={
-            row.getValue('is_active') === 'Active' ? 'default' : 'outline'
-          }
-          className={
-            row.getValue('is_active') === 'Active'
-              ? 'bg-green-500 text-white'
-              : 'bg-red-500 text-white'
-          }
-        >
-          {row.getValue('is_active')}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: 'createdAt',
-      header: 'Created At',
-      cell: ({ row }) => {
-        const date = new Date(row.getValue('createdAt'))
-        return <div>{date.toLocaleDateString()}</div>
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => {
-        const category = row.original
-        const isActive = category.is_active_bool
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation()
-                }}
-              >
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleEdit(category)
-                }}
-              >
-                <PencilIcon className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleToggleStatus(category.id, isActive)
-                }}
-              >
-                {isActive ? (
-                  <>
-                    <ToggleLeft className="mr-2 h-4 w-4" />
-                    Deactivate
-                  </>
-                ) : (
-                  <>
-                    <ToggleRight className="mr-2 h-4 w-4" />
-                    Activate
-                  </>
-                )}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDelete(category.id)
-                }}
-                className="text-destructive focus:text-destructive"
-              >
-                <TrashIcon className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
-  ]
+  const categoryToDeleteName =
+    categoryToDelete &&
+    mappedCategories.find((cat) => cat.id === categoryToDelete)?.name
 
   return (
     <>
@@ -207,12 +88,11 @@ export default function Categories() {
             </Button>
           </div>
 
-          <DataTable
-            columns={columns}
+          <CategoriesTable
             data={mappedCategories}
-            searchKey="name"
-            searchPlaceholder="Search categories..."
-            enablePagination={false}
+            onEdit={handleEdit}
+            onDelete={handleDeleteClick}
+            onToggleStatus={handleToggleStatus}
           />
         </div>
       </div>
@@ -221,6 +101,22 @@ export default function Categories() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         category={editingCategory}
+      />
+
+      <ConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Category"
+        description={
+          categoryToDeleteName
+            ? `Are you sure you want to delete "${categoryToDeleteName}"? This action cannot be undone.`
+            : 'Are you sure you want to delete this category? This action cannot be undone.'
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        isLoading={isDeleting}
       />
     </>
   )
