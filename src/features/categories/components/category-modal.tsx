@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useAddCategory } from '../hooks'
+import { useAddCategory, useUpdateCategory } from '../hooks'
 import { categoryFormSchema } from '../schema/category-form'
 import type { CategoryFormValues } from '../schema/category-form'
 import type { Category } from '../types/category'
@@ -61,14 +61,29 @@ export function CategoryModal({
     }
   }, [open, category, setValue, reset])
 
-  const { mutate: addCategory, isPending } = useAddCategory()
+  const { mutate: addCategory, isPending: isAdding } = useAddCategory()
+  const { mutate: updateCategory, isPending: isUpdating } = useUpdateCategory()
+  const isPending = isAdding || isUpdating
+
   const onSubmit = (data: CategoryFormValues) => {
-    addCategory(data, {
-      onSuccess: () => {
-        handleOpenChange(false)
-        reset()
-      },
-    })
+    if (isEditing && category) {
+      updateCategory(
+        { id: category.id, ...data },
+        {
+          onSuccess: () => {
+            handleOpenChange(false)
+            reset()
+          },
+        },
+      )
+    } else {
+      addCategory(data, {
+        onSuccess: () => {
+          handleOpenChange(false)
+          reset()
+        },
+      })
+    }
   }
 
   const handleOpenChange = (newOpen: boolean) => {

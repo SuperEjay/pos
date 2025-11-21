@@ -1,7 +1,18 @@
 import { useState } from 'react'
 
-import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-react'
-import { useGetCategories } from '../hooks'
+import {
+  MoreHorizontal,
+  PencilIcon,
+  PlusIcon,
+  TrashIcon,
+  ToggleLeft,
+  ToggleRight,
+} from 'lucide-react'
+import {
+  useDeleteCategory,
+  useGetCategories,
+  useToggleCategoryStatus,
+} from '../hooks'
 import { CategoryModal } from './category-modal'
 import type { Category } from '@/features/categories/types'
 
@@ -10,20 +21,37 @@ import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { Header } from '@/components'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+type CategoryTableRow = Category & {
+  is_active: string
+  is_active_bool: boolean
+}
 
 export default function Categories() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const { data: categories } = useGetCategories()
+  const { mutate: deleteCategory } = useDeleteCategory()
+  const { mutate: toggleStatus } = useToggleCategoryStatus()
 
   // map the categories to the Category type
-  const mappedCategories =
+  const mappedCategories: Array<CategoryTableRow> =
     categories?.map((category) => ({
       id: category.id,
       name: category.name,
       description: category.description,
-      is_active: category.is_active ? 'Active' : 'Inactive',
       createdAt: category.created_at,
+      updatedAt: category.updated_at || category.created_at,
+      is_active: category.is_active ? 'Active' : 'Inactive',
+      is_active_bool: category.is_active,
     })) ?? []
 
   const handleCreate = () => {
@@ -31,17 +59,28 @@ export default function Categories() {
     setIsModalOpen(true)
   }
 
-  const handleEdit = (category: Category) => {
-    setEditingCategory(category)
+  const handleEdit = (category: CategoryTableRow) => {
+    setEditingCategory({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+    })
     setIsModalOpen(true)
   }
 
-  const handleDelete = (category: Category) => {
-    console.log('Delete category:', category)
-    // Implement delete functionality
+  const handleDelete = (categoryId: string) => {
+    if (window.confirm('Are you sure you want to delete this category?')) {
+      deleteCategory(categoryId)
+    }
   }
 
-  const columns: Array<ColumnDef<Category>> = [
+  const handleToggleStatus = (categoryId: string, currentStatus: boolean) => {
+    toggleStatus({ id: categoryId, isActive: !currentStatus })
+  }
+
+  const columns: Array<ColumnDef<CategoryTableRow>> = [
     {
       accessorKey: 'name',
       header: 'Name',
@@ -89,29 +128,64 @@ export default function Categories() {
       header: 'Actions',
       cell: ({ row }) => {
         const category = row.original
+        const isActive = category.is_active_bool
+
         return (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleEdit(category)
-              }}
-            >
-              <PencilIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDelete(category)
-              }}
-            >
-              <TrashIcon className="w-4 h-4" />
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleEdit(category)
+                }}
+              >
+                <PencilIcon className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggleStatus(category.id, isActive)
+                }}
+              >
+                {isActive ? (
+                  <>
+                    <ToggleLeft className="mr-2 h-4 w-4" />
+                    Deactivate
+                  </>
+                ) : (
+                  <>
+                    <ToggleRight className="mr-2 h-4 w-4" />
+                    Activate
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDelete(category.id)
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <TrashIcon className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )
       },
     },
@@ -135,7 +209,7 @@ export default function Categories() {
 
           <DataTable
             columns={columns}
-            data={mappedCategories as unknown as Array<Category>}
+            data={mappedCategories}
             searchKey="name"
             searchPlaceholder="Search categories..."
             enablePagination={false}
