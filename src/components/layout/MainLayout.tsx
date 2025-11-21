@@ -1,3 +1,5 @@
+import { Toaster } from 'sonner'
+
 import { SideBar } from '../navigation'
 import { Separator } from '../ui/separator'
 import { SidebarProvider, SidebarTrigger } from '../ui/sidebar'
@@ -29,6 +31,8 @@ export default function MainLayout({
           <div className="w-full">{children}</div>
         </main>
       </SidebarProvider>
+
+      <Toaster />
     </div>
   )
 }

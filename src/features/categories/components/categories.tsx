@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { PencilIcon, PlusIcon, TrashIcon } from 'lucide-react'
+import { useGetCategories } from '../hooks'
 import { CategoryModal } from './category-modal'
 import type { Category } from '@/features/categories/types'
 
@@ -8,36 +9,22 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { Header } from '@/components'
-
-// Mock data - replace with actual data fetching later
-const mockCategories: Array<Category> = [
-  {
-    id: '1',
-    name: 'Beverages',
-    description: 'Hot and cold drinks',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-  },
-  {
-    id: '2',
-    name: 'Food',
-    description: 'Main dishes and snacks',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-  },
-  {
-    id: '3',
-    name: 'Desserts',
-    description: 'Sweet treats',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-  },
-]
+import { Badge } from '@/components/ui/badge'
 
 export default function Categories() {
-  const [categories, setCategories] = useState<Array<Category>>(mockCategories)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const { data: categories } = useGetCategories()
+
+  // map the categories to the Category type
+  const mappedCategories =
+    categories?.map((category) => ({
+      id: category.id,
+      name: category.name,
+      description: category.description,
+      is_active: category.is_active ? 'Active' : 'Inactive',
+      createdAt: category.created_at,
+    })) ?? []
 
   const handleCreate = () => {
     setEditingCategory(null)
@@ -47,33 +34,6 @@ export default function Categories() {
   const handleEdit = (category: Category) => {
     setEditingCategory(category)
     setIsModalOpen(true)
-  }
-
-  const handleSave = (data: { name: string; description: string }) => {
-    if (editingCategory) {
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === editingCategory.id
-            ? {
-                ...cat,
-                name: data.name,
-                description: data.description || null,
-                updatedAt: new Date().toISOString(),
-              }
-            : cat,
-        ),
-      )
-    } else {
-      // Create new category
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        name: data.name,
-        description: data.description || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      setCategories((prev) => [...prev, newCategory])
-    }
   }
 
   const handleDelete = (category: Category) => {
@@ -96,6 +56,24 @@ export default function Categories() {
         <div className="text-muted-foreground">
           {row.getValue('description') || 'No description'}
         </div>
+      ),
+    },
+    {
+      accessorKey: 'is_active',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge
+          variant={
+            row.getValue('is_active') === 'Active' ? 'default' : 'outline'
+          }
+          className={
+            row.getValue('is_active') === 'Active'
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
+          }
+        >
+          {row.getValue('is_active')}
+        </Badge>
       ),
     },
     {
@@ -157,7 +135,7 @@ export default function Categories() {
 
           <DataTable
             columns={columns}
-            data={categories}
+            data={mappedCategories as unknown as Array<Category>}
             searchKey="name"
             searchPlaceholder="Search categories..."
             enablePagination={false}
@@ -169,7 +147,6 @@ export default function Categories() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         category={editingCategory}
-        onSave={handleSave}
       />
     </>
   )

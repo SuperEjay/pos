@@ -8,4 +8,3 @@ export interface Category {
   createdAt: string
   updatedAt: string
 }
-

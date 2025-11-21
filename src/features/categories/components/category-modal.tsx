@@ -1,9 +1,10 @@
-import * as React from 'react'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useAddCategory } from '../hooks'
 import { categoryFormSchema } from '../schema/category-form'
-import type { Category } from '@/features/categories/types'
 import type { CategoryFormValues } from '../schema/category-form'
+import type { Category } from '../types/category'
 import {
   Dialog,
   DialogContent,
@@ -22,14 +23,12 @@ interface CategoryModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   category?: Category | null
-  onSave: (data: { name: string; description: string }) => void | Promise<void>
 }
 
 export function CategoryModal({
   open,
   onOpenChange,
   category,
-  onSave,
 }: CategoryModalProps) {
   const isEditing = Boolean(category)
 
@@ -48,7 +47,7 @@ export function CategoryModal({
   })
 
   // Reset form when modal opens/closes or category changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (open) {
       if (category) {
         setValue('name', category.name)
@@ -62,17 +61,14 @@ export function CategoryModal({
     }
   }, [open, category, setValue, reset])
 
-  const onSubmit = async (data: CategoryFormValues) => {
-    try {
-      await onSave({
-        name: data.name,
-        description: data.description,
-      })
-      reset()
-      onOpenChange(false)
-    } catch (error) {
-      console.error('Error saving category:', error)
-    }
+  const { mutate: addCategory, isPending } = useAddCategory()
+  const onSubmit = (data: CategoryFormValues) => {
+    addCategory(data, {
+      onSuccess: () => {
+        handleOpenChange(false)
+        reset()
+      },
+    })
   }
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -149,17 +145,17 @@ export function CategoryModal({
               type="button"
               variant="outline"
               onClick={() => handleOpenChange(false)}
-              disabled={isSubmitting}
+              disabled={isPending}
               className="border-stone-300 text-stone-700 hover:bg-stone-100"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isPending}
               className="bg-stone-700 text-white hover:bg-stone-800"
             >
-              {isSubmitting
+              {isPending
                 ? isEditing
                   ? 'Updating...'
                   : 'Creating...'
