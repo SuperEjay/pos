@@ -1,3 +1,4 @@
+import { memo, useMemo, useCallback } from 'react'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -22,7 +23,7 @@ interface ProductGridProps {
   onProductClick: (product: any) => void
 }
 
-export function ProductGrid({
+export const ProductGrid = memo(function ProductGrid({
   products,
   categories,
   selectedCategory,
@@ -31,14 +32,30 @@ export function ProductGrid({
   onSearchChange,
   onProductClick,
 }: ProductGridProps) {
-  const filteredProducts = products?.filter((product) => {
-    const matchesCategory =
-      !selectedCategory || product.category_id === selectedCategory
-    const matchesSearch =
-      !searchQuery ||
-      product.name.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesCategory && matchesSearch && product.is_active
-  })
+  const filteredProducts = useMemo(() => {
+    return products?.filter((product) => {
+      const matchesCategory =
+        !selectedCategory || product.category_id === selectedCategory
+      const matchesSearch =
+        !searchQuery ||
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchesCategory && matchesSearch && product.is_active
+    })
+  }, [products, selectedCategory, searchQuery])
+
+  const handleCategoryClick = useCallback(
+    (categoryId: string | null) => {
+      onCategoryChange(categoryId)
+    },
+    [onCategoryChange],
+  )
+
+  const handleProductClick = useCallback(
+    (product: any) => {
+      onProductClick(product)
+    },
+    [onProductClick],
+  )
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -59,7 +76,7 @@ export function ProductGrid({
           <Button
             variant={selectedCategory === null ? 'default' : 'outline'}
             size="lg"
-            onClick={() => onCategoryChange(null)}
+            onClick={() => handleCategoryClick(null)}
             className={cn(
               'min-w-[120px] h-12 text-base',
               selectedCategory === null &&
@@ -73,7 +90,7 @@ export function ProductGrid({
               key={category.id}
               variant={selectedCategory === category.id ? 'default' : 'outline'}
               size="lg"
-              onClick={() => onCategoryChange(category.id)}
+              onClick={() => handleCategoryClick(category.id)}
               className={cn(
                 'min-w-[120px] h-12 text-base whitespace-nowrap',
                 selectedCategory === category.id &&
@@ -93,7 +110,7 @@ export function ProductGrid({
             <ProductCard
               key={product.id}
               product={product}
-              onClick={() => onProductClick(product)}
+              onClick={() => handleProductClick(product)}
             />
           ))}
         </div>
@@ -106,5 +123,5 @@ export function ProductGrid({
       </div>
     </div>
   )
-}
+})
 

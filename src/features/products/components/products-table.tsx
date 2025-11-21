@@ -1,3 +1,4 @@
+import { memo, useMemo, useCallback } from 'react'
 import {
   EyeIcon,
   MoreHorizontal,
@@ -35,14 +36,43 @@ interface ProductsTableProps {
   onToggleStatus: (productId: string, currentStatus: boolean) => void
 }
 
-export function ProductsTable({
+export const ProductsTable = memo(function ProductsTable({
   data,
   onEdit,
   onView,
   onDelete,
   onToggleStatus,
 }: ProductsTableProps) {
-  const columns: Array<ColumnDef<ProductTableRow>> = [
+  const handleView = useCallback(
+    (productId: string) => {
+      onView(productId)
+    },
+    [onView],
+  )
+
+  const handleEdit = useCallback(
+    (product: ProductTableRow) => {
+      onEdit(product)
+    },
+    [onEdit],
+  )
+
+  const handleDelete = useCallback(
+    (productId: string) => {
+      onDelete(productId)
+    },
+    [onDelete],
+  )
+
+  const handleToggleStatus = useCallback(
+    (productId: string, currentStatus: boolean) => {
+      onToggleStatus(productId, currentStatus)
+    },
+    [onToggleStatus],
+  )
+
+  const columns: Array<ColumnDef<ProductTableRow>> = useMemo(
+    () => [
     {
       accessorKey: 'name',
       header: 'Name',
@@ -111,7 +141,7 @@ export function ProductsTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onView(product.id)
+                  handleView(product.id)
                 }}
               >
                 <EyeIcon className="mr-2 h-4 w-4" />
@@ -120,7 +150,7 @@ export function ProductsTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onEdit(product)
+                  handleEdit(product)
                 }}
               >
                 <PencilIcon className="mr-2 h-4 w-4" />
@@ -129,7 +159,7 @@ export function ProductsTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onToggleStatus(product.id, isActive)
+                  handleToggleStatus(product.id, isActive)
                 }}
               >
                 {isActive ? (
@@ -148,7 +178,7 @@ export function ProductsTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onDelete(product.id)
+                  handleDelete(product.id)
                 }}
                 className="text-destructive focus:text-destructive"
               >
@@ -160,7 +190,9 @@ export function ProductsTable({
         )
       },
     },
-  ]
+  ],
+    [handleView, handleEdit, handleDelete, handleToggleStatus],
+  )
 
   return (
     <DataTable
@@ -170,5 +202,4 @@ export function ProductsTable({
       searchPlaceholder="Search products..."
     />
   )
-}
-
+})

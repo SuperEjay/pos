@@ -1,310 +1,358 @@
-Welcome to your new TanStack app! 
+# POS (Point of Sale) System
 
-# Getting Started
+A modern, full-featured Point of Sale (POS) system built with React, TypeScript, and Supabase. This application provides a complete solution for managing products, categories, and orders with a tablet-optimized POS interface.
 
-To run this application:
+## 🚀 Features
+
+- **Product Management**
+  - Create, read, update, and delete products
+  - Product variants and variant options support
+  - Category-based organization
+  - Stock management
+  - Product search and filtering
+
+- **Category Management**
+  - Full CRUD operations for product categories
+  - Category-based product filtering
+
+- **Order Management**
+  - Create orders through POS interface or manual entry
+  - View, edit, and delete orders
+  - Advanced filtering (by status, date, customer, product, category)
+  - Order status tracking (pending, processing, completed, cancelled, refunded)
+  - Payment method tracking (Cash, GCash)
+  - Additional notes/remarks field
+
+- **POS Interface**
+  - Tablet-optimized touch-friendly interface
+  - Real-time cart management
+  - Product search and category filtering
+  - Variant selection with options
+  - Automatic order completion on checkout
+  - Payment method selection
+  - Notes/remarks support
+
+## 🛠️ Tech Stack
+
+- **Frontend Framework**: React 19 with TypeScript
+- **Routing**: TanStack Router (file-based routing)
+- **State Management**: TanStack Query (React Query)
+- **UI Components**: Shadcn/ui + Radix UI
+- **Styling**: Tailwind CSS
+- **Form Handling**: React Hook Form + Zod validation
+- **Database**: Supabase (PostgreSQL)
+- **Build Tool**: Vite
+- **Package Manager**: Bun
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Bun** (v1.0.0 or higher) - [Install Bun](https://bun.sh/docs/installation)
+- **Node.js** (v20.19+ or v22.12+) - Required by Vite
+- **Supabase Account** - [Sign up for free](https://supabase.com)
+
+## 🔧 Setup Instructions
+
+### Step 1: Clone the Repository
+
+```bash
+git clone <repository-url>
+cd pos
+```
+
+### Step 2: Install Dependencies
 
 ```bash
 bun install
-bun --bun run start
 ```
 
-# Building For Production
+### Step 3: Set Up Environment Variables
 
-To build this application for production:
+Create a `.env` file in the root directory:
 
 ```bash
-bun --bun run build
+cp .env.example .env
 ```
 
-## Testing
+Or create a new `.env` file with the following variables:
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+**How to get your Supabase credentials:**
+1. Go to [Supabase Dashboard](https://app.supabase.com)
+2. Create a new project or select an existing one
+3. Go to **Settings** → **API**
+4. Copy the **Project URL** and **anon/public key**
+5. Paste them into your `.env` file
+
+### Step 4: Set Up the Database
+
+1. **Create Tables in Supabase**
+
+   Go to your Supabase project dashboard → **SQL Editor** and run the following SQL scripts:
+
+   #### Categories Table
+   ```sql
+   CREATE TABLE IF NOT EXISTS categories (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     name text NOT NULL,
+     description text,
+     is_active boolean NOT NULL DEFAULT true,
+     created_at timestamp with time zone NOT NULL DEFAULT now(),
+     updated_at timestamp with time zone
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_categories_is_active ON categories(is_active);
+   CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
+   ```
+
+   #### Products Table
+   ```sql
+   CREATE TABLE IF NOT EXISTS products (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     name text NOT NULL,
+     description text,
+     category_id uuid NOT NULL REFERENCES categories(id) ON DELETE RESTRICT,
+     sku text,
+     price numeric(10, 2),
+     stock integer,
+     is_active boolean NOT NULL DEFAULT true,
+     created_at timestamp with time zone NOT NULL DEFAULT now(),
+     updated_at timestamp with time zone
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+   CREATE INDEX IF NOT EXISTS idx_products_is_active ON products(is_active);
+   CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+   ```
+
+   #### Product Variants Table
+   ```sql
+   CREATE TABLE IF NOT EXISTS product_variants (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+     name text NOT NULL,
+     price numeric(10, 2),
+     stock integer,
+     sku text,
+     created_at timestamp with time zone NOT NULL DEFAULT now(),
+     updated_at timestamp with time zone
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_product_variants_product_id ON product_variants(product_id);
+   ```
+
+   #### Product Variant Options Table
+   ```sql
+   CREATE TABLE IF NOT EXISTS product_variant_options (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     variant_id uuid NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
+     name text NOT NULL,
+     value text NOT NULL,
+     created_at timestamp with time zone NOT NULL DEFAULT now(),
+     updated_at timestamp with time zone
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_product_variant_options_variant_id ON product_variant_options(variant_id);
+   ```
+
+   #### Orders Table
+   ```sql
+   CREATE TABLE IF NOT EXISTS orders (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     customer_name text NOT NULL,
+     status text NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'cancelled', 'refunded')),
+     total numeric(10, 2) NOT NULL,
+     order_date date NOT NULL,
+     payment_method text CHECK (payment_method IN ('cash', 'gcash')),
+     notes text,
+     created_at timestamp with time zone NOT NULL DEFAULT now(),
+     updated_at timestamp with time zone
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+   CREATE INDEX IF NOT EXISTS idx_orders_order_date ON orders(order_date);
+   CREATE INDEX IF NOT EXISTS idx_orders_customer_name ON orders(customer_name);
+   CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+   ```
+
+   #### Order Items Table
+   ```sql
+   CREATE TABLE IF NOT EXISTS order_items (
+     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+     order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+     product_id uuid NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+     variant_id uuid REFERENCES product_variants(id) ON DELETE SET NULL,
+     quantity integer NOT NULL CHECK (quantity > 0),
+     price numeric(10, 2) NOT NULL CHECK (price >= 0),
+     subtotal numeric(10, 2) NOT NULL CHECK (subtotal >= 0),
+     created_at timestamp with time zone NOT NULL DEFAULT now(),
+     updated_at timestamp with time zone
+   );
+
+   CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+   CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+   CREATE INDEX IF NOT EXISTS idx_order_items_variant_id ON order_items(variant_id);
+   ```
+
+2. **Set Up Row Level Security (RLS) - Optional**
+
+   If you want to enable RLS, run these policies:
+
+   ```sql
+   -- Enable RLS on all tables
+   ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE product_variants ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE product_variant_options ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+   ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+
+   -- Create policies (adjust based on your authentication needs)
+   CREATE POLICY "Allow all for authenticated users" ON categories
+     FOR ALL USING (auth.role() = 'authenticated');
+
+   CREATE POLICY "Allow all for authenticated users" ON products
+     FOR ALL USING (auth.role() = 'authenticated');
+
+   CREATE POLICY "Allow all for authenticated users" ON product_variants
+     FOR ALL USING (auth.role() = 'authenticated');
+
+   CREATE POLICY "Allow all for authenticated users" ON product_variant_options
+     FOR ALL USING (auth.role() = 'authenticated');
+
+   CREATE POLICY "Allow all for authenticated users" ON orders
+     FOR ALL USING (auth.role() = 'authenticated');
+
+   CREATE POLICY "Allow all for authenticated users" ON order_items
+     FOR ALL USING (auth.role() = 'authenticated');
+   ```
+
+   **Note**: For development, you can disable RLS or use the anon key with appropriate policies.
+
+### Step 5: Run the Development Server
 
 ```bash
-bun --bun run test
+bun --bun run dev
 ```
 
-## Styling
+The application will be available at `http://localhost:3000`
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
+### Step 6: Access the Application
 
+- **Main Dashboard**: `http://localhost:3000`
+- **POS Interface**: `http://localhost:3000/pos`
+- **Orders Management**: `http://localhost:3000/orders`
+- **Products Management**: `http://localhost:3000/products`
+- **Categories Management**: `http://localhost:3000/categories`
 
-## Linting & Formatting
+## 📁 Project Structure
 
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ui/            # Shadcn/ui components
+│   ├── layout/        # Layout components
+│   ├── navigation/    # Navigation components
+│   └── headers/       # Header components
+├── features/          # Feature modules
+│   ├── categories/   # Category management
+│   ├── products/      # Product management
+│   └── orders/        # Order management & POS
+├── routes/            # TanStack Router routes
+├── hooks/             # Custom React hooks
+├── lib/               # Utility functions
+├── utils/             # Helper utilities (Supabase client)
+└── integrations/      # Third-party integrations
+```
 
-This project uses [eslint](https://eslint.org/) and [prettier](https://prettier.io/) for linting and formatting. Eslint is configured using [tanstack/eslint-config](https://tanstack.com/config/latest/docs/eslint). The following scripts are available:
+## 🧪 Available Scripts
+
+- `bun --bun run dev` - Start development server
+- `bun --bun run build` - Build for production
+- `bun --bun run serve` - Preview production build
+- `bun --bun run test` - Run tests
+- `bun --bun run lint` - Run ESLint
+- `bun --bun run format` - Format code with Prettier
+- `bun --bun run check` - Format and lint code
+
+## 🎨 Adding New Components
+
+This project uses Shadcn/ui. To add new components:
 
 ```bash
-bun --bun run lint
-bun --bun run format
-bun --bun run check
+pnpx shadcn@latest add <component-name>
 ```
 
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
+Example:
 ```bash
-pnpx shadcn@latest add button
+pnpx shadcn@latest add card
 ```
 
+## 🔐 Environment Variables
 
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_SUPABASE_URL` | Your Supabase project URL | Yes |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase anonymous/public key | Yes |
 
-## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
+## 📝 Key Features Explained
 
-### Adding A Route
+### Product Variants
+Products can have multiple variants (e.g., sizes, colors) with their own prices, stock, and SKUs. Each variant can have options (e.g., "Size: Large", "Color: Red").
 
-To add a new route to your application just add another a new file in the `./src/routes` directory.
+### POS Interface
+The POS interface is optimized for tablet use with:
+- Large, touch-friendly buttons
+- Real-time cart updates
+- Variant selection dialogs
+- Payment method selection
+- Automatic order completion
 
-TanStack will automatically generate the content of the route file for you.
+### Order Status Flow
+- **Pending**: Order created but not yet processed
+- **Processing**: Order is being prepared
+- **Completed**: Order is finished (default for POS checkout)
+- **Cancelled**: Order was cancelled
+- **Refunded**: Order was refunded
 
-Now that you have two routes you can use a `Link` component to navigate between them.
+## 🐛 Troubleshooting
 
-### Adding Links
+### Build Errors
+- Ensure Node.js version is 20.19+ or 22.12+
+- Clear `node_modules` and reinstall: `rm -rf node_modules && bun install`
 
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
+### Database Connection Issues
+- Verify your Supabase credentials in `.env`
+- Check that your Supabase project is active
+- Ensure RLS policies allow your operations (or disable RLS for development)
 
-```tsx
-import { Link } from "@tanstack/react-router";
-```
+### Port Already in Use
+- Change the port in `package.json` or use: `bun --bun run dev --port 3001`
 
-Then anywhere in your JSX you can use it like so:
+## 📚 Additional Resources
 
-```tsx
-<Link to="/about">About</Link>
-```
+- [TanStack Router Docs](https://tanstack.com/router)
+- [TanStack Query Docs](https://tanstack.com/query)
+- [Supabase Docs](https://supabase.com/docs)
+- [Shadcn/ui Docs](https://ui.shadcn.com)
+- [Tailwind CSS Docs](https://tailwindcss.com)
 
-This will create a link that will navigate to the `/about` route.
+## 🤝 Contributing
 
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
+1. Create a feature branch
+2. Make your changes
+3. Run `bun --bun run check` to ensure code quality
+4. Submit a pull request
 
-### Using A Layout
+## 📄 License
 
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
+[Add your license here]
 
-Here is an example layout that includes a header:
+---
 
-```tsx
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-
-import { Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-})
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
-
-```bash
-bun install @tanstack/react-query @tanstack/react-query-devtools
-```
-
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
-
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-}
-```
-
-You can also add TanStack Query Devtools to the root route (optional).
-
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Now you can use `useQuery` to fetch your data.
-
-```tsx
-import { useQuery } from "@tanstack/react-query";
-
-import "./App.css";
-
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
-
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
-
-## State Management
-
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
-
-First you need to add TanStack Store as a dependency:
-
-```bash
-bun install @tanstack/store
-```
-
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-    </div>
-  );
-}
-
-export default App;
-```
-
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
-
-Let's check this out by doubling the count using derived state.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
-
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
-
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
-
-export default App;
-```
-
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
-
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
-
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).
+**Happy Coding! 🚀**

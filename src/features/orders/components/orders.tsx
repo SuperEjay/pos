@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 
 import { PlusIcon } from 'lucide-react'
 import {
@@ -31,71 +31,69 @@ export default function Orders() {
   const { mutate: deleteOrder, isPending: isDeleting } = useDeleteOrder()
 
   // Map the orders to the OrderTableRow type
-  const mappedOrders: Array<OrderTableRow> =
-    orders?.map((order: any) => ({
-      id: order.id,
-      customer_name: order.customer_name,
-      status: order.status,
-      total: order.total,
-      order_date: order.order_date,
-      payment_method: order.payment_method || null,
-      notes: order.notes || null,
-      created_at: order.created_at,
-      updated_at: order.updated_at || order.created_at,
-      status_display:
-        order.status === 'pending'
-          ? 'Pending'
-          : order.status === 'processing'
-            ? 'Processing'
-            : order.status === 'completed'
-              ? 'Completed'
-              : order.status === 'cancelled'
-                ? 'Cancelled'
-                : order.status === 'refunded'
-                  ? 'Refunded'
-                  : order.status,
-    })) ?? []
+  const mappedOrders: Array<OrderTableRow> = useMemo(
+    () =>
+      orders?.map((order: any) => ({
+        id: order.id,
+        customer_name: order.customer_name,
+        status: order.status,
+        total: order.total,
+        order_date: order.order_date,
+        order_type: order.order_type || null,
+        delivery_fee: order.delivery_fee || null,
+        payment_method: order.payment_method || null,
+        notes: order.notes || null,
+        created_at: order.created_at,
+        updated_at: order.updated_at || order.created_at,
+      })) ?? [],
+    [orders],
+  )
 
-  const handleCreate = () => {
+  const handleCreate = useCallback(() => {
     setEditingOrder(null)
     setIsModalOpen(true)
-  }
+  }, [])
 
-  const handleView = (orderId: string) => {
+  const handleView = useCallback((orderId: string) => {
     setViewingOrderId(orderId)
     setIsViewDialogOpen(true)
-  }
+  }, [])
 
-  const handleEdit = (order: OrderTableRow) => {
+  const handleEdit = useCallback((order: OrderTableRow) => {
     setEditingOrder({
       id: order.id,
       customer_name: order.customer_name,
       status: order.status,
       total: order.total,
       order_date: order.order_date,
+      order_type: order.order_type,
+      delivery_fee: order.delivery_fee,
       payment_method: order.payment_method,
       notes: order.notes,
       created_at: order.created_at,
       updated_at: order.updated_at,
     })
     setIsModalOpen(true)
-  }
+  }, [])
 
-  const handleDeleteClick = (orderId: string) => {
+  const handleDeleteClick = useCallback((orderId: string) => {
     setOrderToDelete(orderId)
     setIsDeleteDialogOpen(true)
-  }
+  }, [])
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = useCallback(() => {
     if (orderToDelete) {
       deleteOrder(orderToDelete)
       setOrderToDelete(null)
     }
-  }
+  }, [orderToDelete, deleteOrder])
 
-  const orderToDeleteName =
-    orderToDelete &&
-    mappedOrders.find((ord) => ord.id === orderToDelete)?.customer_name
+  const orderToDeleteName = useMemo(
+    () =>
+      orderToDelete &&
+      mappedOrders.find((ord) => ord.id === orderToDelete)?.customer_name,
+    [orderToDelete, mappedOrders],
+  )
 
   return (
     <>

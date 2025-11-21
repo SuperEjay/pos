@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { ShoppingCart, Plus, Minus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import type { PaymentMethod } from '@/features/orders/types'
+import type { PaymentMethod, OrderType } from '@/features/orders/types'
 
 interface CartItem {
   product_id: string
@@ -25,11 +26,16 @@ interface CartItem {
 interface CartPanelProps {
   cart: CartItem[]
   customerName: string
+  orderType: OrderType | null
+  deliveryFee: number
   paymentMethod: PaymentMethod | null
   notes: string
+  itemsTotal: number
   total: number
   isCreatingOrder: boolean
   onCustomerNameChange: (name: string) => void
+  onOrderTypeChange: (type: OrderType | null) => void
+  onDeliveryFeeChange: (fee: number) => void
   onPaymentMethodChange: (method: PaymentMethod | null) => void
   onNotesChange: (notes: string) => void
   onQuantityUpdate: (index: number, delta: number) => void
@@ -38,14 +44,19 @@ interface CartPanelProps {
   onCheckout: () => void
 }
 
-export function CartPanel({
+export const CartPanel = memo(function CartPanel({
   cart,
   customerName,
+  orderType,
+  deliveryFee,
   paymentMethod,
   notes,
+  itemsTotal,
   total,
   isCreatingOrder,
   onCustomerNameChange,
+  onOrderTypeChange,
+  onDeliveryFeeChange,
   onPaymentMethodChange,
   onNotesChange,
   onQuantityUpdate,
@@ -73,6 +84,52 @@ export function CartPanel({
             className="h-12 text-base bg-white border-stone-300"
           />
         </div>
+
+        {/* Order Type */}
+        <div className="space-y-2">
+          <Label htmlFor="order-type" className="text-sm font-medium text-stone-700">
+            Order Type
+          </Label>
+          <Select
+            value={orderType || 'pickup'}
+            onValueChange={(value) => {
+              onOrderTypeChange(value as OrderType)
+              if (value === 'pickup') {
+                onDeliveryFeeChange(0)
+              }
+            }}
+          >
+            <SelectTrigger
+              id="order-type"
+              className="h-12 text-base bg-white border-stone-300 w-full"
+            >
+              <SelectValue placeholder="Select order type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pickup">Pickup</SelectItem>
+              <SelectItem value="delivery">Delivery</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Delivery Fee - Only show when order type is delivery */}
+        {orderType === 'delivery' && (
+          <div className="space-y-2">
+            <Label htmlFor="delivery-fee" className="text-sm font-medium text-stone-700">
+              Delivery Fee
+            </Label>
+            <Input
+              id="delivery-fee"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Enter delivery fee"
+              value={deliveryFee || ''}
+              onChange={(e) => onDeliveryFeeChange(Number(e.target.value) || 0)}
+              className="h-12 text-base bg-white border-stone-300"
+            />
+          </div>
+        )}
 
         {/* Payment Method */}
         <div className="space-y-2">
@@ -179,7 +236,19 @@ export function CartPanel({
 
       {/* Cart Footer */}
       <div className="border-t border-stone-200 p-4 space-y-3 bg-stone-50">
-        <div className="flex justify-between items-center text-lg">
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-stone-600">Subtotal:</span>
+            <span className="font-medium">₱{itemsTotal.toFixed(2)}</span>
+          </div>
+          {orderType === 'delivery' && deliveryFee > 0 && (
+            <div className="flex justify-between">
+              <span className="text-stone-600">Delivery Fee:</span>
+              <span className="font-medium">₱{deliveryFee.toFixed(2)}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-between items-center text-lg border-t pt-2">
           <span className="font-semibold">Total:</span>
           <span className="font-bold text-xl">₱{total.toFixed(2)}</span>
         </div>
@@ -207,5 +276,5 @@ export function CartPanel({
       </div>
     </div>
   )
-}
+})
 

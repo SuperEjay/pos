@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
@@ -22,7 +23,7 @@ interface VariantDialogProps {
   onSelectNoVariant: () => void
 }
 
-export function VariantDialog({
+export const VariantDialog = memo(function VariantDialog({
   open,
   onOpenChange,
   productName,
@@ -84,5 +85,5 @@ export function VariantDialog({
       </DialogContent>
     </Dialog>
   )
-}
+})
 

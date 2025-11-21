@@ -137,10 +137,17 @@ export const getOrder = async (id: string) => {
 
 export const addOrder = async (order: OrderFormValues) => {
   // Calculate total from items
-  const total = order.items.reduce(
+  const itemsTotal = order.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   )
+
+  // Add delivery fee if order type is delivery
+  const deliveryFee = order.order_type === 'delivery' && order.delivery_fee
+    ? order.delivery_fee
+    : 0
+
+  const total = itemsTotal + deliveryFee
 
   // Insert order
   const { data: orderData, error: orderError } = await supabase
@@ -150,6 +157,8 @@ export const addOrder = async (order: OrderFormValues) => {
       status: order.status,
       order_date: order.order_date,
       total: total,
+      order_type: order.order_type || null,
+      delivery_fee: order.order_type === 'delivery' ? (order.delivery_fee || 0) : null,
       payment_method: order.payment_method || null,
       notes: order.notes || null,
     })
@@ -182,10 +191,17 @@ export const updateOrder = async ({
   ...order
 }: OrderFormValues & { id: string }) => {
   // Calculate total from items
-  const total = order.items.reduce(
+  const itemsTotal = order.items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   )
+
+  // Add delivery fee if order type is delivery
+  const deliveryFee = order.order_type === 'delivery' && order.delivery_fee
+    ? order.delivery_fee
+    : 0
+
+  const total = itemsTotal + deliveryFee
 
   // Update order
   const { data, error } = await supabase
@@ -195,6 +211,8 @@ export const updateOrder = async ({
       status: order.status,
       order_date: order.order_date,
       total: total,
+      order_type: order.order_type || null,
+      delivery_fee: order.order_type === 'delivery' ? (order.delivery_fee || 0) : null,
       payment_method: order.payment_method || null,
       notes: order.notes || null,
       updated_at: new Date().toISOString(),

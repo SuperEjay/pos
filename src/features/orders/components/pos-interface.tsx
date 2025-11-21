@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { ShoppingCart, ArrowLeft } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useGetProducts } from '@/features/products/hooks'
@@ -8,7 +8,7 @@ import { getProduct } from '@/features/products/services/products.service'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import type { PaymentMethod } from '@/features/orders/types'
+import type { PaymentMethod, OrderType } from '@/features/orders/types'
 import { ProductGrid } from './pos/product-grid'
 import { CartPanel } from './pos/cart-panel'
 import { VariantDialog } from './pos/variant-dialog'
@@ -29,6 +29,8 @@ export function POSInterface() {
   const [searchQuery, setSearchQuery] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [customerName, setCustomerName] = useState('')
+  const [orderType, setOrderType] = useState<OrderType | null>('pickup')
+  const [deliveryFee, setDeliveryFee] = useState<number>(0)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>('cash')
   const [notes, setNotes] = useState('')
   const [productsWithVariants, setProductsWithVariants] = useState<
@@ -45,99 +47,114 @@ export function POSInterface() {
   const { mutate: createOrder, isPending: isCreatingOrder } = useAddOrder()
 
   // Fetch product with variants
-  const fetchProductVariants = async (productId: string) => {
-    if (productsWithVariants[productId]) return productsWithVariants[productId]
+  const fetchProductVariants = useCallback(
+    async (productId: string) => {
+      if (productsWithVariants[productId]) return productsWithVariants[productId]
 
-    try {
-      const productData = await getProduct(productId)
-      setProductsWithVariants((prev) => ({
-        ...prev,
-        [productId]: productData,
-      }))
-      return productData
-    } catch (error) {
-      console.error('Failed to fetch product variants:', error)
-      return null
-    }
-  }
-
-  // Add product to cart
-  const handleAddToCart = async (product: any) => {
-    const productData = await fetchProductVariants(product.id)
-    const variants = productData?.variants || []
-
-    if (variants.length > 0) {
-      // Show variant selection dialog
-      setSelectedProductForVariant({
-        productId: product.id,
-        productName: product.name,
-      })
-      setShowVariantDialog(true)
-    } else {
-      // Add directly to cart
-      addToCart(product.id, product.name, null, null, product.price || 0)
-    }
-  }
+      try {
+        const productData = await getProduct(productId)
+        setProductsWithVariants((prev) => ({
+          ...prev,
+          [productId]: productData,
+        }))
+        return productData
+      } catch (error) {
+        console.error('Failed to fetch product variants:', error)
+        return null
+      }
+    },
+    [productsWithVariants],
+  )
 
   // Add item to cart
-  const addToCart = (
-    productId: string,
-    productName: string,
-    variantId: string | null,
-    variantName: string | null,
-    price: number,
-  ) => {
-    const existingItemIndex = cart.findIndex(
-      (item) =>
-        item.product_id === productId &&
-        item.variant_id === variantId,
-    )
+  const addToCart = useCallback(
+    (
+      productId: string,
+      productName: string,
+      variantId: string | null,
+      variantName: string | null,
+      price: number,
+    ) => {
+      setCart((prevCart) => {
+        const existingItemIndex = prevCart.findIndex(
+          (item) =>
+            item.product_id === productId &&
+            item.variant_id === variantId,
+        )
 
-    if (existingItemIndex >= 0) {
-      // Update quantity
-      const newCart = [...cart]
-      newCart[existingItemIndex].quantity += 1
-      newCart[existingItemIndex].subtotal =
-        newCart[existingItemIndex].quantity * newCart[existingItemIndex].price
-      setCart(newCart)
-    } else {
-      // Add new item
-      setCart([
-        ...cart,
-        {
-          product_id: productId,
-          product_name: productName,
-          variant_id: variantId,
-          variant_name: variantName,
-          quantity: 1,
-          price: price,
-          subtotal: price,
-        },
-      ])
-    }
-  }
+        if (existingItemIndex >= 0) {
+          // Update quantity
+          const newCart = [...prevCart]
+          newCart[existingItemIndex].quantity += 1
+          newCart[existingItemIndex].subtotal =
+            newCart[existingItemIndex].quantity *
+            newCart[existingItemIndex].price
+          return newCart
+        } else {
+          // Add new item
+          return [
+            ...prevCart,
+            {
+              product_id: productId,
+              product_name: productName,
+              variant_id: variantId,
+              variant_name: variantName,
+              quantity: 1,
+              price: price,
+              subtotal: price,
+            },
+          ]
+        }
+      })
+    },
+    [],
+  )
+
+  // Add product to cart
+  const handleAddToCart = useCallback(
+    async (product: any) => {
+      const productData = await fetchProductVariants(product.id)
+      const variants = productData?.variants || []
+
+      if (variants.length > 0) {
+        // Show variant selection dialog
+        setSelectedProductForVariant({
+          productId: product.id,
+          productName: product.name,
+        })
+        setShowVariantDialog(true)
+      } else {
+        // Add directly to cart
+        addToCart(product.id, product.name, null, null, product.price || 0)
+      }
+    },
+    [fetchProductVariants, addToCart],
+  )
 
   // Handle variant selection
-  const handleVariantSelect = (variant: any) => {
-    if (selectedProductForVariant) {
-      const variantPrice =
-        variant.price ||
-        productsWithVariants[selectedProductForVariant.productId]?.price ||
-        0
-      addToCart(
-        selectedProductForVariant.productId,
-        selectedProductForVariant.productName,
-        variant.id,
-        variant.name,
-        variantPrice,
-      )
-      setShowVariantDialog(false)
-      setSelectedProductForVariant(null)
-    }
-  }
+  const handleVariantSelect = useCallback(
+    (variant: any) => {
+      if (selectedProductForVariant) {
+        const variantPrice =
+          variant.price ||
+          productsWithVariants[selectedProductForVariant.productId]?.price ||
+          0
+        addToCart(
+          selectedProductForVariant.productId,
+          selectedProductForVariant.productName,
+          variant.id,
+          variant.name,
+          variantPrice,
+        )
+        setShowVariantDialog(false)
+        setSelectedProductForVariant(null)
+      }
+    },
+    [selectedProductForVariant, productsWithVariants, addToCart],
+  )
 
   // Handle no variant selection
-  const handleNoVariant = () => {
+  const handleNoVariant = useCallback(() => {
     if (selectedProductForVariant) {
       const basePrice =
         productsWithVariants[selectedProductForVariant.productId]?.price || 0
@@ -151,26 +168,36 @@ export function POSInterface() {
       setShowVariantDialog(false)
       setSelectedProductForVariant(null)
     }
-  }
+  }, [selectedProductForVariant, productsWithVariants, addToCart])
 
   // Update cart item quantity
-  const updateQuantity = (index: number, delta: number) => {
-    const newCart = [...cart]
-    newCart[index].quantity = Math.max(1, newCart[index].quantity + delta)
-    newCart[index].subtotal = newCart[index].quantity * newCart[index].price
-    setCart(newCart)
-  }
+  const updateQuantity = useCallback((index: number, delta: number) => {
+    setCart((prevCart) => {
+      const newCart = [...prevCart]
+      newCart[index].quantity = Math.max(1, newCart[index].quantity + delta)
+      newCart[index].subtotal =
+        newCart[index].quantity * newCart[index].price
+      return newCart
+    })
+  }, [])
 
   // Remove item from cart
-  const removeFromCart = (index: number) => {
-    setCart(cart.filter((_, i) => i !== index))
-  }
+  const removeFromCart = useCallback((index: number) => {
+    setCart((prevCart) => prevCart.filter((_, i) => i !== index))
+  }, [])
 
-  // Calculate total
-  const total = cart.reduce((sum, item) => sum + item.subtotal, 0)
+  // Calculate total (items + delivery fee if delivery)
+  const itemsTotal = useMemo(
+    () => cart.reduce((sum, item) => sum + item.subtotal, 0),
+    [cart],
+  )
+  const total = useMemo(
+    () => itemsTotal + (orderType === 'delivery' ? deliveryFee : 0),
+    [itemsTotal, orderType, deliveryFee],
+  )
 
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = useCallback(() => {
     if (!customerName.trim()) {
       toast.error('Please enter customer name')
       return
@@ -185,6 +212,8 @@ export function POSInterface() {
       customer_name: customerName.trim(),
       status: 'completed' as const,
       order_date: new Date().toISOString().split('T')[0],
+      order_type: orderType,
+      delivery_fee: orderType === 'delivery' ? deliveryFee : null,
       payment_method: paymentMethod,
       notes: notes.trim() || null,
       items: cart.map((item) => ({
@@ -200,20 +229,26 @@ export function POSInterface() {
         toast.success('Order created successfully!')
         setCart([])
         setCustomerName('')
+        setOrderType('pickup')
+        setDeliveryFee(0)
         setPaymentMethod('cash')
         setNotes('')
       },
     })
-  }
+  }, [customerName, cart, orderType, deliveryFee, paymentMethod, notes, createOrder])
 
   // Clear cart
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCart([])
-  }
+  }, [])
 
-  const selectedProductData = selectedProductForVariant
-    ? productsWithVariants[selectedProductForVariant.productId]
-    : null
+  const selectedProductData = useMemo(
+    () =>
+      selectedProductForVariant
+        ? productsWithVariants[selectedProductForVariant.productId]
+        : null,
+    [selectedProductForVariant, productsWithVariants],
+  )
 
   return (
     <div className="h-screen flex flex-col bg-stone-50">
@@ -260,11 +295,16 @@ export function POSInterface() {
         <CartPanel
           cart={cart}
           customerName={customerName}
+          orderType={orderType}
+          deliveryFee={deliveryFee}
           paymentMethod={paymentMethod}
           notes={notes}
+          itemsTotal={itemsTotal}
           total={total}
           isCreatingOrder={isCreatingOrder}
           onCustomerNameChange={setCustomerName}
+          onOrderTypeChange={setOrderType}
+          onDeliveryFeeChange={setDeliveryFee}
           onPaymentMethodChange={setPaymentMethod}
           onNotesChange={setNotes}
           onQuantityUpdate={updateQuantity}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { memo, useEffect, useState, useMemo, useCallback } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon } from 'lucide-react'
@@ -34,7 +34,11 @@ interface OrderModalProps {
   order?: Order | null
 }
 
-export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
+export const OrderModal = memo(function OrderModal({
+  open,
+  onOpenChange,
+  order,
+}: OrderModalProps) {
   const isEditing = Boolean(order)
   const { data: products } = useGetProducts()
   const { data: orderWithItems, isLoading: isLoadingOrder } = useGetOrder(
@@ -55,6 +59,8 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
       customer_name: '',
       status: 'pending',
       order_date: new Date().toISOString().split('T')[0],
+      order_type: 'pickup',
+      delivery_fee: null,
       items: [],
     },
   })
@@ -70,9 +76,26 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
 
   // Calculate total
   const watchedItems = watch('items')
-  const total = watchedItems.reduce(
-    (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
-    0,
+  const watchedOrderType = watch('order_type')
+  const watchedDeliveryFee = watch('delivery_fee')
+  const itemsTotal = useMemo(
+    () =>
+      watchedItems.reduce(
+        (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+        0,
+      ),
+    [watchedItems],
+  )
+  const deliveryFee = useMemo(
+    () =>
+      watchedOrderType === 'delivery' && watchedDeliveryFee
+        ? watchedDeliveryFee
+        : 0,
+    [watchedOrderType, watchedDeliveryFee],
+  )
+  const total = useMemo(
+    () => itemsTotal + deliveryFee,
+    [itemsTotal, deliveryFee],
   )
 
   // Reset form when modal opens/closes or order changes
@@ -90,6 +113,8 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
           customer_name: order.customer_name,
           status: order.status,
           order_date: order.order_date.split('T')[0],
+          order_type: order.order_type || 'pickup',
+          delivery_fee: order.delivery_fee || null,
           items: items,
         })
       } else if (!order) {
@@ -97,6 +122,8 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
           customer_name: '',
           status: 'pending',
           order_date: new Date().toISOString().split('T')[0],
+          order_type: 'pickup',
+          delivery_fee: null,
           items: [],
         })
       }
@@ -107,44 +134,50 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
   const { mutate: updateOrder, isPending: isUpdating } = useUpdateOrder()
   const isPending = isAdding || isUpdating
 
-  const onSubmit = (data: OrderFormValues) => {
-    if (isEditing && order) {
-      updateOrder(
-        { id: order.id, ...data },
-        {
+  const onSubmit = useCallback(
+    (data: OrderFormValues) => {
+      if (isEditing && order) {
+        updateOrder(
+          { id: order.id, ...data },
+          {
+            onSuccess: () => {
+              handleOpenChange(false)
+              reset()
+            },
+          },
+        )
+      } else {
+        addOrder(data, {
           onSuccess: () => {
             handleOpenChange(false)
             reset()
           },
-        },
-      )
-    } else {
-      addOrder(data, {
-        onSuccess: () => {
-          handleOpenChange(false)
-          reset()
-        },
-      })
-    }
-  }
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!isSubmitting) {
-      onOpenChange(newOpen)
-      if (!newOpen) {
-        reset()
+        })
       }
-    }
-  }
+    },
+    [isEditing, order, updateOrder, addOrder, reset],
+  )
 
-  const addItem = () => {
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!isSubmitting) {
+        onOpenChange(newOpen)
+        if (!newOpen) {
+          reset()
+        }
+      }
+    },
+    [isSubmitting, onOpenChange, reset],
+  )
+
+  const addItem = useCallback(() => {
     appendItem({
       product_id: '',
       variant_id: null,
       quantity: 1,
       price: 0,
     })
-  }
+  }, [appendItem])
 
   // State to store products with variants
   const [productsWithVariants, setProductsWithVariants] = useState<
@@ -152,33 +185,40 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
   >({})
 
   // Fetch product with variants when selected
-  const fetchProductVariants = async (productId: string) => {
-    if (productsWithVariants[productId]) return productsWithVariants[productId]
+  const fetchProductVariants = useCallback(
+    async (productId: string) => {
+      if (productsWithVariants[productId]) return productsWithVariants[productId]
 
-    try {
-      const productData = await getProduct(productId)
-      setProductsWithVariants((prev) => ({
-        ...prev,
-        [productId]: productData,
-      }))
-      return productData
-    } catch (error) {
-      console.error('Failed to fetch product variants:', error)
-      return null
-    }
-  }
+      try {
+        const productData = await getProduct(productId)
+        setProductsWithVariants((prev) => ({
+          ...prev,
+          [productId]: productData,
+        }))
+        return productData
+      } catch (error) {
+        console.error('Failed to fetch product variants:', error)
+        return null
+      }
+    },
+    [productsWithVariants],
+  )
 
-  const getProductVariants = (productId: string) => {
-    if (!productId) return []
-    const productData = productsWithVariants[productId]
-    return productData?.variants || []
-  }
+  const getProductVariants = useCallback(
+    (productId: string) => {
+      if (!productId) return []
+      const productData = productsWithVariants[productId]
+      return productData?.variants || []
+    },
+    [productsWithVariants],
+  )
 
-  const handleProductChange = async (
-    itemIndex: number,
-    productId: string,
-    variantId: string | null,
-  ) => {
+  const handleProductChange = useCallback(
+    async (
+      itemIndex: number,
+      productId: string,
+      variantId: string | null,
+    ) => {
     if (!productId || !products) return
 
     const product = products.find((p: any) => p.id === productId)
@@ -204,7 +244,9 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
     } else {
       setValue(`items.${itemIndex}.variant_id`, null)
     }
-  }
+  },
+    [products, fetchProductVariants, getProductVariants, setValue],
+  )
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -279,27 +321,74 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="order_date">
-                Order Date <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="order_date"
-                type="date"
-                {...register('order_date')}
-                disabled={isSubmitting}
-                className={cn(
-                  'bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200',
-                  errors.order_date &&
-                    'border-destructive focus-visible:border-destructive',
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="order_date">
+                  Order Date <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="order_date"
+                  type="date"
+                  {...register('order_date')}
+                  disabled={isSubmitting}
+                  className={cn(
+                    'bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200',
+                    errors.order_date &&
+                      'border-destructive focus-visible:border-destructive',
+                  )}
+                />
+                {errors.order_date && (
+                  <p className="text-sm text-destructive">
+                    {errors.order_date.message}
+                  </p>
                 )}
-              />
-              {errors.order_date && (
-                <p className="text-sm text-destructive">
-                  {errors.order_date.message}
-                </p>
-              )}
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="order_type">Order Type</Label>
+                <Select
+                  value={watch('order_type') || 'pickup'}
+                  onValueChange={(value) => {
+                    setValue('order_type', value as 'pickup' | 'delivery')
+                    if (value === 'pickup') {
+                      setValue('delivery_fee', null)
+                    }
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger
+                    className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full"
+                  >
+                    <SelectValue placeholder="Select order type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pickup">Pickup</SelectItem>
+                    <SelectItem value="delivery">Delivery</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {watch('order_type') === 'delivery' && (
+              <div className="grid gap-2">
+                <Label htmlFor="delivery_fee">Delivery Fee</Label>
+                <Input
+                  id="delivery_fee"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...register('delivery_fee', { valueAsNumber: true })}
+                  placeholder="Enter delivery fee"
+                  disabled={isSubmitting}
+                  className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200"
+                />
+                {errors.delivery_fee && (
+                  <p className="text-sm text-destructive">
+                    {errors.delivery_fee.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
@@ -491,8 +580,18 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
               )}
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between items-center">
+            <div className="border-t pt-4 space-y-2">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-stone-600">Subtotal:</span>
+                <span className="font-medium">₱{itemsTotal.toFixed(2)}</span>
+              </div>
+              {watchedOrderType === 'delivery' && watchedDeliveryFee && watchedDeliveryFee > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-stone-600">Delivery Fee:</span>
+                  <span className="font-medium">₱{deliveryFee.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center border-t pt-2">
                 <span className="text-lg font-semibold">Total:</span>
                 <span className="text-lg font-bold">₱{total.toFixed(2)}</span>
               </div>
@@ -527,4 +626,4 @@ export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
       </DialogContent>
     </Dialog>
   )
-}
+})

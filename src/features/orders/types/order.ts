@@ -14,6 +14,11 @@ export type OrderStatus =
 export type PaymentMethod = 'cash' | 'gcash'
 
 /**
+ * Order type
+ */
+export type OrderType = 'pickup' | 'delivery'
+
+/**
  * Order entity type definition
  */
 export interface Order {
@@ -22,6 +27,8 @@ export interface Order {
   status: OrderStatus
   total: number
   order_date: string
+  order_type: OrderType | null
+  delivery_fee: number | null
   payment_method: PaymentMethod | null
   notes: string | null
   created_at: string

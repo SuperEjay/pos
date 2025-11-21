@@ -1,3 +1,4 @@
+import { memo, useMemo, useCallback } from 'react'
 import {
   MoreHorizontal,
   PencilIcon,
@@ -31,13 +32,35 @@ interface CategoriesTableProps {
   onToggleStatus: (categoryId: string, currentStatus: boolean) => void
 }
 
-export function CategoriesTable({
+export const CategoriesTable = memo(function CategoriesTable({
   data,
   onEdit,
   onDelete,
   onToggleStatus,
 }: CategoriesTableProps) {
-  const columns: Array<ColumnDef<CategoryTableRow>> = [
+  const handleEdit = useCallback(
+    (category: CategoryTableRow) => {
+      onEdit(category)
+    },
+    [onEdit],
+  )
+
+  const handleDelete = useCallback(
+    (categoryId: string) => {
+      onDelete(categoryId)
+    },
+    [onDelete],
+  )
+
+  const handleToggleStatus = useCallback(
+    (categoryId: string, currentStatus: boolean) => {
+      onToggleStatus(categoryId, currentStatus)
+    },
+    [onToggleStatus],
+  )
+
+  const columns: Array<ColumnDef<CategoryTableRow>> = useMemo(
+    () => [
     {
       accessorKey: 'name',
       header: 'Name',
@@ -106,7 +129,7 @@ export function CategoriesTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onEdit(category)
+                  handleEdit(category)
                 }}
               >
                 <PencilIcon className="mr-2 h-4 w-4" />
@@ -115,7 +138,7 @@ export function CategoriesTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onToggleStatus(category.id, isActive)
+                  handleToggleStatus(category.id, isActive)
                 }}
               >
                 {isActive ? (
@@ -134,7 +157,7 @@ export function CategoriesTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onDelete(category.id)
+                  handleDelete(category.id)
                 }}
                 className="text-destructive focus:text-destructive"
               >
@@ -146,7 +169,9 @@ export function CategoriesTable({
         )
       },
     },
-  ]
+  ],
+    [handleEdit, handleDelete, handleToggleStatus],
+  )
 
   return (
     <DataTable
@@ -156,4 +181,4 @@ export function CategoriesTable({
       searchPlaceholder="Search categories..."
     />
   )
-}
+})

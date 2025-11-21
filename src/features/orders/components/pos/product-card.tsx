@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Badge } from '@/components/ui/badge'
 
 interface ProductCardProps {
@@ -11,7 +12,10 @@ interface ProductCardProps {
   onClick: () => void
 }
 
-export function ProductCard({ product, onClick }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({
+  product,
+  onClick,
+}: ProductCardProps) {
   return (
     <button
       onClick={onClick}
@@ -39,5 +43,5 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
       </div>
     </button>
   )
-}
+})
 

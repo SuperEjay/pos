@@ -1,3 +1,4 @@
+import { memo, useMemo, useCallback } from 'react'
 import { EyeIcon, MoreHorizontal, PencilIcon, TrashIcon } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { Order, OrderStatus } from '@/features/orders/types'
@@ -57,7 +58,7 @@ const statusLabels: Record<OrderStatus, string> = {
   refunded: 'Refunded',
 }
 
-export function OrdersTable({
+export const OrdersTable = memo(function OrdersTable({
   data,
   onEdit,
   onView,
@@ -66,7 +67,89 @@ export function OrdersTable({
   onFiltersChange,
   categories,
 }: OrdersTableProps) {
-  const columns: Array<ColumnDef<OrderTableRow>> = [
+  const handleView = useCallback(
+    (orderId: string) => {
+      onView(orderId)
+    },
+    [onView],
+  )
+
+  const handleEdit = useCallback(
+    (order: OrderTableRow) => {
+      onEdit(order)
+    },
+    [onEdit],
+  )
+
+  const handleDelete = useCallback(
+    (orderId: string) => {
+      onDelete(orderId)
+    },
+    [onDelete],
+  )
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filters,
+        status: value === 'all' ? undefined : (value as OrderStatus),
+      })
+    },
+    [filters, onFiltersChange],
+  )
+
+  const handleDateFromChange = useCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filters,
+        date_from: value || undefined,
+      })
+    },
+    [filters, onFiltersChange],
+  )
+
+  const handleDateToChange = useCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filters,
+        date_to: value || undefined,
+      })
+    },
+    [filters, onFiltersChange],
+  )
+
+  const handleCustomerNameChange = useCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filters,
+        customer_name: value || undefined,
+      })
+    },
+    [filters, onFiltersChange],
+  )
+
+  const handleProductNameChange = useCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filters,
+        product_name: value || undefined,
+      })
+    },
+    [filters, onFiltersChange],
+  )
+
+  const handleCategoryChange = useCallback(
+    (value: string) => {
+      onFiltersChange({
+        ...filters,
+        category_id: value === 'all' ? undefined : value,
+      })
+    },
+    [filters, onFiltersChange],
+  )
+
+  const columns: Array<ColumnDef<OrderTableRow>> = useMemo(
+    () => [
     {
       accessorKey: 'customer_name',
       header: 'Customer',
@@ -85,6 +168,19 @@ export function OrdersTable({
             className={statusColors[status as OrderStatus]}
           >
             {statusLabels[status as OrderStatus]}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: 'order_type',
+      header: 'Type',
+      cell: ({ row }) => {
+        const orderType = row.getValue('order_type') as string | null
+        if (!orderType) return <div className="text-muted-foreground">-</div>
+        return (
+          <Badge variant="outline" className="capitalize">
+            {orderType === 'pickup' ? 'Pickup' : 'Delivery'}
           </Badge>
         )
       },
@@ -130,7 +226,7 @@ export function OrdersTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onView(order.id)
+                  handleView(order.id)
                 }}
               >
                 <EyeIcon className="mr-2 h-4 w-4" />
@@ -139,7 +235,7 @@ export function OrdersTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onEdit(order)
+                  handleEdit(order)
                 }}
               >
                 <PencilIcon className="mr-2 h-4 w-4" />
@@ -149,7 +245,7 @@ export function OrdersTable({
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
-                  onDelete(order.id)
+                  handleDelete(order.id)
                 }}
                 className="text-destructive focus:text-destructive"
               >
@@ -161,7 +257,9 @@ export function OrdersTable({
         )
       },
     },
-  ]
+  ],
+    [handleView, handleEdit, handleDelete],
+  )
 
   return (
     <div className="space-y-4">
@@ -171,12 +269,7 @@ export function OrdersTable({
           <Label htmlFor="status-filter">Status</Label>
           <Select
             value={filters.status || 'all'}
-            onValueChange={(value) =>
-              onFiltersChange({
-                ...filters,
-                status: value === 'all' ? undefined : (value as OrderStatus),
-              })
-            }
+            onValueChange={handleStatusChange}
           >
             <SelectTrigger
               id="status-filter"
@@ -201,12 +294,7 @@ export function OrdersTable({
             id="date-from"
             type="date"
             value={filters.date_from || ''}
-            onChange={(e) =>
-              onFiltersChange({
-                ...filters,
-                date_from: e.target.value || undefined,
-              })
-            }
+            onChange={(e) => handleDateFromChange(e.target.value)}
             className="bg-white border-stone-300 w-full"
           />
         </div>
@@ -217,12 +305,7 @@ export function OrdersTable({
             id="date-to"
             type="date"
             value={filters.date_to || ''}
-            onChange={(e) =>
-              onFiltersChange({
-                ...filters,
-                date_to: e.target.value || undefined,
-              })
-            }
+            onChange={(e) => handleDateToChange(e.target.value)}
             className="bg-white border-stone-300 w-full"
           />
         </div>
@@ -233,12 +316,7 @@ export function OrdersTable({
             id="customer-filter"
             placeholder="Search customer..."
             value={filters.customer_name || ''}
-            onChange={(e) =>
-              onFiltersChange({
-                ...filters,
-                customer_name: e.target.value || undefined,
-              })
-            }
+            onChange={(e) => handleCustomerNameChange(e.target.value)}
             className="bg-white border-stone-300 w-full"
           />
         </div>
@@ -249,12 +327,7 @@ export function OrdersTable({
             id="product-filter"
             placeholder="Search product..."
             value={filters.product_name || ''}
-            onChange={(e) =>
-              onFiltersChange({
-                ...filters,
-                product_name: e.target.value || undefined,
-              })
-            }
+            onChange={(e) => handleProductNameChange(e.target.value)}
             className="bg-white border-stone-300 w-full"
           />
         </div>
@@ -263,12 +336,7 @@ export function OrdersTable({
           <Label htmlFor="category-filter">Category</Label>
           <Select
             value={filters.category_id || 'all'}
-            onValueChange={(value) =>
-              onFiltersChange({
-                ...filters,
-                category_id: value === 'all' ? undefined : value,
-              })
-            }
+            onValueChange={handleCategoryChange}
           >
             <SelectTrigger
               id="category-filter"
@@ -296,4 +364,4 @@ export function OrdersTable({
       />
     </div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { memo, useEffect, useMemo } from 'react'
 import { EyeIcon } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useGetOrder } from '../hooks'
@@ -35,7 +35,7 @@ const statusLabels: Record<string, string> = {
   refunded: 'Refunded',
 }
 
-export function OrderViewDialog({
+export const OrderViewDialog = memo(function OrderViewDialog({
   open,
   onOpenChange,
   orderId,
@@ -49,6 +49,9 @@ export function OrderViewDialog({
       queryClient.invalidateQueries({ queryKey: ['order', orderId] })
     }
   }, [open, orderId, queryClient])
+
+  // Move useMemo before early returns to follow Rules of Hooks
+  const items = useMemo(() => order?.items || [], [order?.items])
 
   if (isLoading) {
     return (
@@ -82,8 +85,6 @@ export function OrderViewDialog({
       </Dialog>
     )
   }
-
-  const items = order.items || []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -138,6 +139,45 @@ export function OrderViewDialog({
 
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
+                    Order Type
+                  </label>
+                  <p className="text-base">
+                    {order.order_type
+                      ? order.order_type.charAt(0).toUpperCase() +
+                        order.order_type.slice(1)
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              {order.order_type === 'delivery' && order.delivery_fee && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Delivery Fee
+                    </label>
+                    <p className="text-base">
+                      ₱{Number(order.delivery_fee).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Payment Method
+                  </label>
+                  <p className="text-base">
+                    {order.payment_method
+                      ? order.payment_method.charAt(0).toUpperCase() +
+                        order.payment_method.slice(1)
+                      : 'N/A'}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
                     Total
                   </label>
                   <p className="text-base font-semibold">
@@ -145,6 +185,17 @@ export function OrderViewDialog({
                   </p>
                 </div>
               </div>
+
+              {order.notes && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Notes
+                  </label>
+                  <p className="text-base whitespace-pre-wrap bg-stone-50 border border-stone-200 rounded-md p-3 mt-1">
+                    {order.notes}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -226,7 +277,13 @@ export function OrderViewDialog({
           {/* Order Summary */}
           <Separator />
           <div className="space-y-2">
-            <div className="flex justify-between items-center text-lg font-semibold">
+            {order.order_type === 'delivery' && order.delivery_fee && (
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Delivery Fee:</span>
+                <span>₱{Number(order.delivery_fee).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center text-lg font-semibold border-t pt-2">
               <span>Total:</span>
               <span>₱{Number(order.total).toFixed(2)}</span>
             </div>
@@ -250,5 +307,5 @@ export function OrderViewDialog({
       </DialogContent>
     </Dialog>
   )
-}
+})
 
