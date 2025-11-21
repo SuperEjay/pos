@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   addProduct,
   deleteProduct,
+  getProduct,
   getProducts,
   toggleProductStatus,
   updateProduct,
@@ -72,6 +73,16 @@ export const useGetProducts = () => {
   return useQuery({
     queryKey: ['products'],
     queryFn: getProducts,
+  })
+}
+
+export const useGetProduct = (id: string | null) => {
+  return useQuery({
+    queryKey: ['product', id],
+    queryFn: () => getProduct(id!),
+    enabled: !!id,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   })
 }
 

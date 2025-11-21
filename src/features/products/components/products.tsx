@@ -7,6 +7,7 @@ import {
   useToggleProductStatus,
 } from '../hooks'
 import { ProductModal } from './product-modal'
+import { ProductViewDialog } from './product-view-dialog'
 import { ProductsTable } from './products-table'
 import type { ProductTableRow } from './products-table'
 import type { Product } from '@/features/products/types'
@@ -17,8 +18,10 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 export default function Products() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [viewingProductId, setViewingProductId] = useState<string | null>(null)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
   const { data: products } = useGetProducts()
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct()
@@ -45,6 +48,11 @@ export default function Products() {
   const handleCreate = () => {
     setEditingProduct(null)
     setIsModalOpen(true)
+  }
+
+  const handleView = (productId: string) => {
+    setViewingProductId(productId)
+    setIsViewDialogOpen(true)
   }
 
   const handleEdit = (product: ProductTableRow) => {
@@ -101,6 +109,7 @@ export default function Products() {
 
           <ProductsTable
             data={mappedProducts}
+            onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
             onToggleStatus={handleToggleStatus}
@@ -112,6 +121,12 @@ export default function Products() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         product={editingProduct}
+      />
+
+      <ProductViewDialog
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+        productId={viewingProductId}
       />
 
       <ConfirmDialog

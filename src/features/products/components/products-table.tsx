@@ -1,4 +1,5 @@
 import {
+  EyeIcon,
   MoreHorizontal,
   PencilIcon,
   ToggleLeft,
@@ -29,6 +30,7 @@ export type ProductTableRow = Omit<Product, 'is_active'> & {
 interface ProductsTableProps {
   data: Array<ProductTableRow>
   onEdit: (product: ProductTableRow) => void
+  onView: (productId: string) => void
   onDelete: (productId: string) => void
   onToggleStatus: (productId: string, currentStatus: boolean) => void
 }
@@ -36,6 +38,7 @@ interface ProductsTableProps {
 export function ProductsTable({
   data,
   onEdit,
+  onView,
   onDelete,
   onToggleStatus,
 }: ProductsTableProps) {
@@ -105,6 +108,15 @@ export function ProductsTable({
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onView(product.id)
+                }}
+              >
+                <EyeIcon className="mr-2 h-4 w-4" />
+                View
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()

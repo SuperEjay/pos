@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon } from 'lucide-react'
-import { useAddProduct, useUpdateProduct } from '../hooks'
+import { useAddProduct, useGetProduct, useUpdateProduct } from '../hooks'
 import { productFormSchema } from '../schema/product-form'
 import type { ProductFormValues } from '../schema/product-form'
 import type { Product } from '../types/product'
@@ -41,6 +41,8 @@ export function ProductModal({
 }: ProductModalProps) {
   const isEditing = Boolean(product)
   const { data: categories } = useGetCategories()
+  const { data: productWithVariants, isLoading: isLoadingProduct } =
+    useGetProduct(product?.id || null)
 
   const {
     register,
@@ -75,17 +77,31 @@ export function ProductModal({
   // Reset form when modal opens/closes or product changes
   useEffect(() => {
     if (open) {
-      if (product) {
-        setValue('name', product.name)
-        setValue('description', product.description || '')
-        setValue('category_id', product.category_id)
-        setValue('sku', product.sku)
-        setValue('price', product.price)
-        setValue('stock', product.stock)
-        // Note: Variants would need to be loaded separately if editing
-        // For now, we'll start with empty variants on edit
-        setValue('variants', [])
-      } else {
+      if (product && productWithVariants && !isLoadingProduct) {
+        // Load product data with variants
+        const variants = (productWithVariants.variants || []).map(
+          (variant: any) => ({
+            name: variant.name,
+            price: variant.price,
+            stock: variant.stock,
+            sku: variant.sku,
+            options: (variant.options || []).map((option: any) => ({
+              name: option.name,
+              value: option.value,
+            })),
+          }),
+        )
+
+        reset({
+          name: product.name,
+          description: product.description || '',
+          category_id: product.category_id,
+          sku: product.sku,
+          price: product.price,
+          stock: product.stock,
+          variants: variants,
+        })
+      } else if (!product) {
         reset({
           name: '',
           description: '',
@@ -97,7 +113,7 @@ export function ProductModal({
         })
       }
     }
-  }, [open, product, setValue, reset])
+  }, [open, product, productWithVariants, isLoadingProduct, reset])
 
   const { mutate: addProduct, isPending: isAdding } = useAddProduct()
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
