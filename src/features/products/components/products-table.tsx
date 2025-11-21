@@ -21,6 +21,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 export type ProductTableRow = Omit<Product, 'is_active'> & {
   category_name?: string | null
@@ -36,6 +44,9 @@ interface ProductsTableProps {
   onDelete: (productId: string) => void
   onToggleStatus: (productId: string, currentStatus: boolean) => void
   onClone: (productId: string) => void
+  categoryFilter?: string
+  onCategoryFilterChange?: (categoryId: string) => void
+  categories?: Array<{ id: string; name: string }>
 }
 
 export const ProductsTable = memo(function ProductsTable({
@@ -45,6 +56,9 @@ export const ProductsTable = memo(function ProductsTable({
   onDelete,
   onToggleStatus,
   onClone,
+  categoryFilter,
+  onCategoryFilterChange,
+  categories,
 }: ProductsTableProps) {
   const handleView = useCallback(
     (productId: string) => {
@@ -81,6 +95,13 @@ export const ProductsTable = memo(function ProductsTable({
     [onClone],
   )
 
+  const handleCategoryChange = useCallback(
+    (value: string) => {
+      onCategoryFilterChange?.(value)
+    },
+    [onCategoryFilterChange],
+  )
+
   const columns: Array<ColumnDef<ProductTableRow>> = useMemo(
     () => [
     {
@@ -98,6 +119,18 @@ export const ProductsTable = memo(function ProductsTable({
           {row.getValue('description') || 'No description'}
         </div>
       ),
+    },
+    {
+      accessorKey: 'category_name',
+      header: 'Category',
+      cell: ({ row }) => {
+        const categoryName = row.getValue('category_name') as string | null | undefined
+        return (
+          <div className="font-medium">
+            {categoryName || 'Uncategorized'}
+          </div>
+        )
+      },
     },
     {
       accessorKey: 'variants_count',
@@ -214,11 +247,41 @@ export const ProductsTable = memo(function ProductsTable({
   )
 
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      searchKey="name"
-      searchPlaceholder="Search products..."
-    />
+    <div className="space-y-4">
+      {/* Category Filter */}
+      {onCategoryFilterChange && categories && (
+        <div className="p-4 border border-stone-200 rounded-lg bg-stone-50">
+          <div className="grid gap-2 max-w-xs">
+            <Label htmlFor="category-filter">Filter by Category</Label>
+            <Select
+              value={categoryFilter || 'all'}
+              onValueChange={handleCategoryChange}
+            >
+              <SelectTrigger
+                id="category-filter"
+                className="bg-white border-stone-300 w-full"
+              >
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      <DataTable
+        columns={columns}
+        data={data}
+        searchKey="name"
+        searchPlaceholder="Search products..."
+      />
+    </div>
   )
 })

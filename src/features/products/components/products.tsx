@@ -15,6 +15,7 @@ import type { Product } from '@/features/products/types'
 import { Button } from '@/components/ui/button'
 import { Header } from '@/components'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { useGetCategories } from '@/features/categories/hooks'
 
 export default function Products() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -24,7 +25,9 @@ export default function Products() {
   const [viewingProductId, setViewingProductId] = useState<string | null>(null)
   const [productToDelete, setProductToDelete] = useState<string | null>(null)
   const [cloningFromProductId, setCloningFromProductId] = useState<string | null>(null)
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined)
   const { data: products } = useGetProducts()
+  const { data: categories } = useGetCategories()
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct()
   const { mutate: toggleStatus } = useToggleProductStatus()
 
@@ -48,6 +51,20 @@ export default function Products() {
       })) ?? [],
     [products],
   )
+
+  // Filter products by category
+  const filteredProducts = useMemo(() => {
+    if (!categoryFilter) {
+      return mappedProducts
+    }
+    return mappedProducts.filter(
+      (product) => product.category_id === categoryFilter,
+    )
+  }, [mappedProducts, categoryFilter])
+
+  const handleCategoryFilterChange = useCallback((categoryId: string) => {
+    setCategoryFilter(categoryId === 'all' ? undefined : categoryId)
+  }, [])
 
   const handleCreate = useCallback(() => {
     setEditingProduct(null)
@@ -136,12 +153,15 @@ export default function Products() {
           </div>
 
           <ProductsTable
-            data={mappedProducts}
+            data={filteredProducts}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDeleteClick}
             onToggleStatus={handleToggleStatus}
             onClone={handleClone}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={handleCategoryFilterChange}
+            categories={categories}
           />
         </div>
       </div>
