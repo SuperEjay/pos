@@ -150,14 +150,14 @@ export const OrderViewDialog = memo(function OrderViewDialog({
                 </div>
               </div>
 
-              {order.order_type === 'delivery' && order.delivery_fee && (
+              {order.order_type === 'delivery' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
                       Delivery Fee
                     </label>
                     <p className="text-base">
-                      ₱{Number(order.delivery_fee).toFixed(2)}
+                      ₱{Number(order.delivery_fee || 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -229,17 +229,16 @@ export const OrderViewDialog = memo(function OrderViewDialog({
                         </label>
                         <p>{item.product_sku || 'N/A'}</p>
                       </div>
-                      {item.variant_name && (
-                        <div>
-                          <label className="text-muted-foreground">
-                            Variant
-                          </label>
-                          <p>
-                            {item.variant_name}
-                            {item.variant_sku && ` (${item.variant_sku})`}
-                          </p>
-                        </div>
-                      )}
+                      <div>
+                        <label className="text-muted-foreground">
+                          Variant
+                        </label>
+                        <p>
+                          {item.variant_name
+                            ? `${item.variant_name}${item.variant_sku ? ` (${item.variant_sku})` : ''}`
+                            : 'N/A'}
+                        </p>
+                      </div>
                       {item.category_name && (
                         <div>
                           <label className="text-muted-foreground">
@@ -277,10 +276,10 @@ export const OrderViewDialog = memo(function OrderViewDialog({
           {/* Order Summary */}
           <Separator />
           <div className="space-y-2">
-            {order.order_type === 'delivery' && order.delivery_fee && (
+            {order.order_type === 'delivery' && (
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Delivery Fee:</span>
-                <span>₱{Number(order.delivery_fee).toFixed(2)}</span>
+                <span>₱{Number(order.delivery_fee || 0).toFixed(2)}</span>
               </div>
             )}
             <div className="flex justify-between items-center text-lg font-semibold border-t pt-2">
