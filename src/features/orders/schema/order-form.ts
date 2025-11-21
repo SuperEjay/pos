@@ -34,6 +34,13 @@ export const orderFormSchema = z.object({
     },
   ),
   order_date: z.string().min(1, 'Order date is required'),
+  payment_method: z.enum(['cash', 'gcash']).nullable().optional(),
+  notes: z
+    .string()
+    .max(500, 'Notes must not exceed 500 characters')
+    .trim()
+    .nullable()
+    .optional(),
   items: z
     .array(orderItemSchema)
     .min(1, 'At least one item is required')

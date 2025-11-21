@@ -2,6 +2,7 @@ import {
   HeadContent,
   Outlet,
   createRootRouteWithContext,
+  useLocation,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
@@ -16,7 +17,35 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  component: () => (
+  component: RootComponent,
+})
+
+function RootComponent() {
+  const location = useLocation()
+  const isPOS = location.pathname.startsWith('/pos')
+
+  if (isPOS) {
+    return (
+      <>
+        <HeadContent />
+        <Outlet />
+        <TanStackDevtools
+          config={{
+            position: 'bottom-right',
+          }}
+          plugins={[
+            {
+              name: 'Tanstack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+            TanStackQueryDevtools,
+          ]}
+        />
+      </>
+    )
+  }
+
+  return (
     <>
       <MainLayout>
         <HeadContent />
@@ -35,5 +64,5 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         />
       </MainLayout>
     </>
-  ),
-})
+  )
+}

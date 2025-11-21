@@ -38,6 +38,8 @@ export default function Orders() {
       status: order.status,
       total: order.total,
       order_date: order.order_date,
+      payment_method: order.payment_method || null,
+      notes: order.notes || null,
       created_at: order.created_at,
       updated_at: order.updated_at || order.created_at,
       status_display:
@@ -71,6 +73,8 @@ export default function Orders() {
       status: order.status,
       total: order.total,
       order_date: order.order_date,
+      payment_method: order.payment_method,
+      notes: order.notes,
       created_at: order.created_at,
       updated_at: order.updated_at,
     })

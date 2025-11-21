@@ -1,4 +1,4 @@
-import { ChevronRight, List, Package, ShoppingCart } from 'lucide-react'
+import { ChevronRight, List, Package, ShoppingCart, ScanLine } from 'lucide-react'
 import { useLocation } from '@tanstack/react-router'
 
 import {
@@ -23,6 +23,11 @@ import { cn } from '@/lib/utils'
 
 // Menu items.
 const items = [
+  {
+    title: 'POS',
+    url: '/pos',
+    icon: ScanLine,
+  },
   {
     title: 'Orders',
     url: '/orders',

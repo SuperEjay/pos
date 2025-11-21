@@ -22,9 +22,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export type OrderTableRow = Order & {
-  status_display: string
-}
+export type OrderTableRow = Order
 
 interface OrdersTableProps {
   data: Array<OrderTableRow>

@@ -23,6 +23,8 @@ The Orders module requires two main tables:
 | `status` | `text` | NOT NULL | Order status: 'pending', 'processing', 'completed', 'cancelled', 'refunded' |
 | `total` | `numeric(10, 2)` | NOT NULL | Total order amount (decimal with 2 decimal places) |
 | `order_date` | `date` | NOT NULL | Date of the order |
+| `payment_method` | `text` | NULLABLE | Payment method: 'cash' or 'gcash' |
+| `notes` | `text` | NULLABLE | Additional information or notes (max 500 characters) |
 | `created_at` | `timestamp with time zone` | NOT NULL, DEFAULT `now()` | Timestamp when the order was created |
 | `updated_at` | `timestamp with time zone` | NULLABLE | Timestamp when the order was last updated |
 
@@ -35,6 +37,8 @@ CREATE TABLE orders (
   status text NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'cancelled', 'refunded')),
   total numeric(10, 2) NOT NULL,
   order_date date NOT NULL,
+  payment_method text CHECK (payment_method IN ('cash', 'gcash')),
+  notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone
 );
@@ -173,6 +177,8 @@ CREATE TABLE IF NOT EXISTS orders (
   status text NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'cancelled', 'refunded')),
   total numeric(10, 2) NOT NULL,
   order_date date NOT NULL,
+  payment_method text CHECK (payment_method IN ('cash', 'gcash')),
+  notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone
 );

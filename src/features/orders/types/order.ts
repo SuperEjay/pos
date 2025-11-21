@@ -9,6 +9,11 @@ export type OrderStatus =
   | 'refunded'
 
 /**
+ * Payment method type
+ */
+export type PaymentMethod = 'cash' | 'gcash'
+
+/**
  * Order entity type definition
  */
 export interface Order {
@@ -17,6 +22,8 @@ export interface Order {
   status: OrderStatus
   total: number
   order_date: string
+  payment_method: PaymentMethod | null
+  notes: string | null
   created_at: string
   updated_at: string | null
 }

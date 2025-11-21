@@ -150,6 +150,8 @@ export const addOrder = async (order: OrderFormValues) => {
       status: order.status,
       order_date: order.order_date,
       total: total,
+      payment_method: order.payment_method || null,
+      notes: order.notes || null,
     })
     .select()
     .single()
@@ -193,6 +195,8 @@ export const updateOrder = async ({
       status: order.status,
       order_date: order.order_date,
       total: total,
+      payment_method: order.payment_method || null,
+      notes: order.notes || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
