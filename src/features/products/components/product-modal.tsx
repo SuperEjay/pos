@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { PlusIcon, TrashIcon } from 'lucide-react'
+import { PlusIcon, TrashIcon, CopyIcon } from 'lucide-react'
 import { useAddProduct, useGetProduct, useUpdateProduct } from '../hooks'
 import { productFormSchema } from '../schema/product-form'
 import type { ProductFormValues } from '../schema/product-form'
@@ -76,6 +76,8 @@ export function ProductModal({
     control,
     name: 'variants',
   })
+
+  const [showCloneDialog, setShowCloneDialog] = useState(false)
 
   // Reset form when modal opens/closes or product changes
   useEffect(() => {
@@ -152,7 +154,7 @@ export function ProductModal({
     }
   }
 
-  const addVariant = () => {
+  const addVariant = useCallback(() => {
     appendVariant({
       name: '',
       price: null,
@@ -160,7 +162,27 @@ export function ProductModal({
       sku: null,
       options: [] as Array<{ name: string; value: string }>,
     })
-  }
+  }, [appendVariant])
+
+  const cloneVariant = useCallback(
+    (sourceVariantIndex: number) => {
+      const sourceVariant = variantFields[sourceVariantIndex]
+      if (!sourceVariant) return
+
+      const variantValues = watch(`variants.${sourceVariantIndex}`)
+      appendVariant({
+        name: `${variantValues.name || 'Variant'} (Copy)`,
+        price: variantValues.price,
+        stock: variantValues.stock,
+        sku: null, // Clear SKU when cloning
+        options: (variantValues.options || []).map((option: any) => ({
+          name: option.name || '',
+          value: option.value || '',
+        })),
+      })
+    },
+    [variantFields, watch, appendVariant],
+  )
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -318,17 +340,32 @@ export function ProductModal({
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <Label>Variants</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addVariant}
-                  disabled={isSubmitting}
-                  className="border-stone-300 text-stone-700 hover:bg-stone-100"
-                >
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  Add Variant
-                </Button>
+                <div className="flex gap-2">
+                  {variantFields.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCloneDialog(true)}
+                      disabled={isSubmitting}
+                      className="border-stone-300 text-stone-700 hover:bg-stone-100"
+                    >
+                      <CopyIcon className="w-4 h-4 mr-2" />
+                      Clone Variant
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addVariant}
+                    disabled={isSubmitting}
+                    className="border-stone-300 text-stone-700 hover:bg-stone-100"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    Add Variant
+                  </Button>
+                </div>
               </div>
 
               {variantFields.map((variant, variantIndex) => (
@@ -338,16 +375,31 @@ export function ProductModal({
                 >
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">Variant {variantIndex + 1}</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeVariant(variantIndex)}
-                      disabled={isSubmitting}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <TrashIcon className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      {variantFields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => cloneVariant(variantIndex)}
+                          disabled={isSubmitting}
+                          className="text-stone-700 hover:text-stone-900"
+                          title="Clone this variant"
+                        >
+                          <CopyIcon className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeVariant(variantIndex)}
+                        disabled={isSubmitting}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -452,6 +504,51 @@ export function ProductModal({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Clone Variant Dialog */}
+      {showCloneDialog && variantFields.length > 0 && (
+        <Dialog open={showCloneDialog} onOpenChange={setShowCloneDialog}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Clone Variant</DialogTitle>
+              <DialogDescription>
+                Select a variant to clone. All details will be copied to a new variant.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2 py-4">
+              {variantFields.map((variant, index) => {
+                const variantName = watch(`variants.${index}.name`) || `Variant ${index + 1}`
+                return (
+                  <Button
+                    key={variant.id}
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start border-stone-300 text-stone-700 hover:bg-stone-100"
+                    onClick={() => {
+                      cloneVariant(index)
+                      setShowCloneDialog(false)
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    <CopyIcon className="w-4 h-4 mr-2" />
+                    {variantName}
+                  </Button>
+                )
+              })}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowCloneDialog(false)}
+                className="border-stone-300 text-stone-700 hover:bg-stone-100"
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   )
 }
