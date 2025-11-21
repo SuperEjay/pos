@@ -70,7 +70,7 @@ export const addProduct = async (product: ProductFormValues) => {
   if (productError) throw productError
 
   // Insert variants if any
-  if (product.variants && product.variants.length > 0) {
+  if (product.variants.length > 0) {
     const variantsToInsert = product.variants.map((variant) => ({
       product_id: productData.id,
       name: variant.name,
@@ -94,7 +94,7 @@ export const addProduct = async (product: ProductFormValues) => {
     }> = []
 
     product.variants.forEach((variant, variantIndex) => {
-      if (variant.options && variant.options.length > 0) {
+      if (variant.options.length > 0) {
         variant.options.forEach((option) => {
           optionsToInsert.push({
             variant_id: variantsData[variantIndex].id,
@@ -155,7 +155,7 @@ export const updateProduct = async ({
   }
 
   // Insert new variants if any
-  if (product.variants && product.variants.length > 0) {
+  if (product.variants.length > 0) {
     const variantsToInsert = product.variants.map((variant) => ({
       product_id: id,
       name: variant.name,
@@ -179,7 +179,7 @@ export const updateProduct = async ({
     }> = []
 
     product.variants.forEach((variant, variantIndex) => {
-      if (variant.options && variant.options.length > 0) {
+      if (variant.options.length > 0) {
         variant.options.forEach((option) => {
           optionsToInsert.push({
             variant_id: variantsData[variantIndex].id,
@@ -236,4 +236,3 @@ export const toggleProductStatus = async (id: string, isActive: boolean) => {
   if (error) throw error
   return data
 }
-
