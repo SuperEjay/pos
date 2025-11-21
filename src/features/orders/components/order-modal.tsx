@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useAddOrder, useGetOrder, useUpdateOrder } from '../hooks'
@@ -34,11 +34,7 @@ interface OrderModalProps {
   order?: Order | null
 }
 
-export function OrderModal({
-  open,
-  onOpenChange,
-  order,
-}: OrderModalProps) {
+export function OrderModal({ open, onOpenChange, order }: OrderModalProps) {
   const isEditing = Boolean(order)
   const { data: products } = useGetProducts()
   const { data: orderWithItems, isLoading: isLoadingOrder } = useGetOrder(
@@ -214,9 +210,7 @@ export function OrderModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? 'Edit Order' : 'Create Order'}
-          </DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Order' : 'Create Order'}</DialogTitle>
           <DialogDescription>
             {isEditing
               ? 'Update the order information below.'
@@ -354,7 +348,7 @@ export function OrderModal({
                         }}
                         disabled={isSubmitting}
                       >
-                        <SelectTrigger className="bg-white border-stone-300">
+                        <SelectTrigger className="bg-white border-stone-300 w-full">
                           <SelectValue placeholder="Select product" />
                         </SelectTrigger>
                         <SelectContent>
@@ -367,7 +361,7 @@ export function OrderModal({
                       </Select>
                       {errors.items?.[itemIndex]?.product_id && (
                         <p className="text-sm text-destructive">
-                          {errors.items[itemIndex]?.product_id?.message}
+                          {errors.items[itemIndex].product_id.message}
                         </p>
                       )}
                     </div>
@@ -375,11 +369,11 @@ export function OrderModal({
                     <div className="grid gap-2">
                       <Label>Variant (Optional)</Label>
                       <Select
-                        value={
-                          watch(`items.${itemIndex}.variant_id`) || 'none'
-                        }
+                        value={watch(`items.${itemIndex}.variant_id`) || 'none'}
                         onValueChange={async (value) => {
-                          const productId = watch(`items.${itemIndex}.product_id`)
+                          const productId = watch(
+                            `items.${itemIndex}.product_id`,
+                          )
                           if (value === 'none') {
                             handleProductChange(itemIndex, productId, null)
                             // Reset price to product price
@@ -387,7 +381,10 @@ export function OrderModal({
                               (p: any) => p.id === productId,
                             )
                             if (product?.price) {
-                              setValue(`items.${itemIndex}.price`, product.price)
+                              setValue(
+                                `items.${itemIndex}.price`,
+                                product.price,
+                              )
                             }
                           } else {
                             await fetchProductVariants(productId)
@@ -406,10 +403,11 @@ export function OrderModal({
                           }
                         }}
                         disabled={
-                          isSubmitting || !watch(`items.${itemIndex}.product_id`)
+                          isSubmitting ||
+                          !watch(`items.${itemIndex}.product_id`)
                         }
                       >
-                        <SelectTrigger className="bg-white border-stone-300">
+                        <SelectTrigger className="bg-white border-stone-300 w-full">
                           <SelectValue placeholder="No variant" />
                         </SelectTrigger>
                         <SelectContent>
@@ -422,7 +420,9 @@ export function OrderModal({
                               {variant.options &&
                                 variant.options.length > 0 &&
                                 ` (${variant.options
-                                  .map((opt: any) => `${opt.name}: ${opt.value}`)
+                                  .map(
+                                    (opt: any) => `${opt.name}: ${opt.value}`,
+                                  )
                                   .join(', ')})`}
                             </SelectItem>
                           ))}
@@ -446,7 +446,7 @@ export function OrderModal({
                       />
                       {errors.items?.[itemIndex]?.quantity && (
                         <p className="text-sm text-destructive">
-                          {errors.items[itemIndex]?.quantity?.message}
+                          {errors.items[itemIndex].quantity.message}
                         </p>
                       )}
                     </div>
@@ -468,14 +468,14 @@ export function OrderModal({
                       />
                       {errors.items?.[itemIndex]?.price && (
                         <p className="text-sm text-destructive">
-                          {errors.items[itemIndex]?.price?.message}
+                          {errors.items[itemIndex].price.message}
                         </p>
                       )}
                     </div>
                   </div>
 
                   <div className="text-sm text-muted-foreground">
-                    Subtotal: $
+                    Subtotal: ₱
                     {(
                       (watch(`items.${itemIndex}.quantity`) || 0) *
                       (watch(`items.${itemIndex}.price`) || 0)
@@ -494,7 +494,7 @@ export function OrderModal({
             <div className="border-t pt-4">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">Total:</span>
-                <span className="text-lg font-bold">${total.toFixed(2)}</span>
+                <span className="text-lg font-bold">₱{total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -528,4 +528,3 @@ export function OrderModal({
     </Dialog>
   )
 }
-

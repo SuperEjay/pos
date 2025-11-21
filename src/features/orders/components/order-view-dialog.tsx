@@ -141,7 +141,7 @@ export function OrderViewDialog({
                     Total
                   </label>
                   <p className="text-base font-semibold">
-                    ${Number(order.total).toFixed(2)}
+                    ₱{Number(order.total).toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export function OrderViewDialog({
                         {item.product_name || 'Unknown Product'}
                       </h4>
                       <div className="text-sm font-semibold">
-                        ${Number(item.subtotal).toFixed(2)}
+                        ₱{Number(item.subtotal).toFixed(2)}
                       </div>
                     </div>
 
@@ -205,7 +205,7 @@ export function OrderViewDialog({
                         <label className="text-muted-foreground">
                           Unit Price
                         </label>
-                        <p>${Number(item.price).toFixed(2)}</p>
+                        <p>₱{Number(item.price).toFixed(2)}</p>
                       </div>
                     </div>
                   </div>
@@ -228,7 +228,7 @@ export function OrderViewDialog({
           <div className="space-y-2">
             <div className="flex justify-between items-center text-lg font-semibold">
               <span>Total:</span>
-              <span>${Number(order.total).toFixed(2)}</span>
+              <span>₱{Number(order.total).toFixed(2)}</span>
             </div>
           </div>
 

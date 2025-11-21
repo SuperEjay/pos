@@ -1,11 +1,6 @@
-import {
-  EyeIcon,
-  MoreHorizontal,
-  PencilIcon,
-  TrashIcon,
-} from 'lucide-react'
+import { EyeIcon, MoreHorizontal, PencilIcon, TrashIcon } from 'lucide-react'
 import type { ColumnDef } from '@tanstack/react-table'
-import type { Order } from '@/features/orders/types'
+import type { Order, OrderStatus } from '@/features/orders/types'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
 import { Badge } from '@/components/ui/badge'
@@ -26,7 +21,6 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { OrderStatus } from '@/features/orders/types'
 
 export type OrderTableRow = Order & {
   status_display: string
@@ -86,10 +80,13 @@ export function OrdersTable({
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const status = row.getValue('status') as OrderStatus
+        const status = row.getValue('status')
         return (
-          <Badge variant="outline" className={statusColors[status]}>
-            {statusLabels[status]}
+          <Badge
+            variant="outline"
+            className={statusColors[status as OrderStatus]}
+          >
+            {statusLabels[status as OrderStatus]}
           </Badge>
         )
       },
@@ -98,16 +95,16 @@ export function OrdersTable({
       accessorKey: 'total',
       header: 'Total',
       cell: ({ row }) => {
-        const total = row.getValue('total') as number
-        return <div>${Number(total).toFixed(2)}</div>
+        const total = row.getValue('total')
+        return <div>₱{Number(total).toFixed(2)}</div>
       },
     },
     {
       accessorKey: 'order_date',
       header: 'Order Date',
       cell: ({ row }) => {
-        const date = row.getValue('order_date') as string
-        return <div>{new Date(date).toLocaleDateString()}</div>
+        const date = row.getValue('order_date')
+        return <div>{new Date(date as string).toLocaleDateString()}</div>
       },
     },
     {
@@ -185,7 +182,7 @@ export function OrdersTable({
           >
             <SelectTrigger
               id="status-filter"
-              className="bg-white border-stone-300"
+              className="bg-white border-stone-300 w-full"
             >
               <SelectValue placeholder="All Statuses" />
             </SelectTrigger>
@@ -212,7 +209,7 @@ export function OrdersTable({
                 date_from: e.target.value || undefined,
               })
             }
-            className="bg-white border-stone-300"
+            className="bg-white border-stone-300 w-full"
           />
         </div>
 
@@ -228,7 +225,7 @@ export function OrdersTable({
                 date_to: e.target.value || undefined,
               })
             }
-            className="bg-white border-stone-300"
+            className="bg-white border-stone-300 w-full"
           />
         </div>
 
@@ -244,7 +241,7 @@ export function OrdersTable({
                 customer_name: e.target.value || undefined,
               })
             }
-            className="bg-white border-stone-300"
+            className="bg-white border-stone-300 w-full"
           />
         </div>
 
@@ -260,7 +257,7 @@ export function OrdersTable({
                 product_name: e.target.value || undefined,
               })
             }
-            className="bg-white border-stone-300"
+            className="bg-white border-stone-300 w-full"
           />
         </div>
 
@@ -277,7 +274,7 @@ export function OrdersTable({
           >
             <SelectTrigger
               id="category-filter"
-              className="bg-white border-stone-300"
+              className="bg-white border-stone-300 w-full"
             >
               <SelectValue placeholder="All Categories" />
             </SelectTrigger>
@@ -302,4 +299,3 @@ export function OrdersTable({
     </div>
   )
 }
-
