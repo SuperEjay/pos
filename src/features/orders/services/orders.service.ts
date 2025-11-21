@@ -246,6 +246,21 @@ export const updateOrder = async ({
   return data
 }
 
+export const updateOrderStatus = async (id: string, status: OrderStatus) => {
+  const { data, error } = await supabase
+    .from('orders')
+    .update({
+      status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export const deleteOrder = async (id: string) => {
   // Delete order items first (cascade should handle this, but being explicit)
   await supabase.from('order_items').delete().eq('order_id', id)

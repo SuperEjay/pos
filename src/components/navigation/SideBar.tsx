@@ -1,4 +1,4 @@
-import { ChevronRight, List, Package, ShoppingCart, ScanLine } from 'lucide-react'
+import { ChevronRight, List, Package, ShoppingCart, ScanLine, Clock } from 'lucide-react'
 import { useLocation } from '@tanstack/react-router'
 
 import {
@@ -27,6 +27,11 @@ const items = [
     title: 'POS',
     url: '/pos',
     icon: ScanLine,
+  },
+  {
+    title: 'Order Queue',
+    url: '/queue-orders',
+    icon: Clock,
   },
   {
     title: 'Orders',

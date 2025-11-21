@@ -7,8 +7,10 @@ import {
   getOrder,
   getOrders,
   updateOrder,
+  updateOrderStatus,
   type GetOrdersFilters,
 } from '../services/orders.service'
+import type { OrderStatus } from '../types/order'
 
 export const useAddOrder = () => {
   const queryClient = useQueryClient()
@@ -66,6 +68,21 @@ export const useGetOrder = (id: string | null) => {
     enabled: !!id,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+  })
+}
+
+export const useUpdateOrderStatus = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: OrderStatus }) =>
+      updateOrderStatus(id, status),
+    onSuccess: () => {
+      toast.success('Order status updated successfully')
+      queryClient.invalidateQueries({ queryKey: ['orders'] })
+    },
+    onError: () => {
+      toast.error('Failed to update order status')
+    },
   })
 }
 

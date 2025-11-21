@@ -10,8 +10,10 @@ export default function Header({
   return (
     <>
       <div className="flex flex-col gap-2">
-        {title && <h1 className="text-xl font-bold">{title}</h1>}
-        {description && <p className="text-sm text-gray-500">{description}</p>}
+        {title && <h1 className="text-lg sm:text-xl font-bold">{title}</h1>}
+        {description && (
+          <p className="text-xs sm:text-sm text-gray-500">{description}</p>
+        )}
       </div>
       <Separator />
     </>

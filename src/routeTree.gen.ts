@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as QueueOrdersIndexRouteImport } from './routes/queue-orders/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -19,6 +20,11 @@ import { Route as manageproductsCategoriesIndexRouteImport } from './routes/(man
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QueueOrdersIndexRoute = QueueOrdersIndexRouteImport.update({
+  id: '/queue-orders/',
+  path: '/queue-orders/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PosIndexRoute = PosIndexRouteImport.update({
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/orders': typeof OrdersIndexRoute
   '/pos': typeof PosIndexRoute
+  '/queue-orders': typeof QueueOrdersIndexRoute
   '/categories': typeof manageproductsCategoriesIndexRoute
   '/products': typeof manageproductsProductsIndexRoute
 }
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/orders': typeof OrdersIndexRoute
   '/pos': typeof PosIndexRoute
+  '/queue-orders': typeof QueueOrdersIndexRoute
   '/categories': typeof manageproductsCategoriesIndexRoute
   '/products': typeof manageproductsProductsIndexRoute
 }
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/orders/': typeof OrdersIndexRoute
   '/pos/': typeof PosIndexRoute
+  '/queue-orders/': typeof QueueOrdersIndexRoute
   '/(manage products)/categories/': typeof manageproductsCategoriesIndexRoute
   '/(manage products)/products/': typeof manageproductsProductsIndexRoute
 }
@@ -81,6 +90,7 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/orders'
     | '/pos'
+    | '/queue-orders'
     | '/categories'
     | '/products'
   fileRoutesByTo: FileRoutesByTo
@@ -89,6 +99,7 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/orders'
     | '/pos'
+    | '/queue-orders'
     | '/categories'
     | '/products'
   id:
@@ -97,6 +108,7 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/orders/'
     | '/pos/'
+    | '/queue-orders/'
     | '/(manage products)/categories/'
     | '/(manage products)/products/'
   fileRoutesById: FileRoutesById
@@ -106,6 +118,7 @@ export interface RootRouteChildren {
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   PosIndexRoute: typeof PosIndexRoute
+  QueueOrdersIndexRoute: typeof QueueOrdersIndexRoute
   manageproductsCategoriesIndexRoute: typeof manageproductsCategoriesIndexRoute
   manageproductsProductsIndexRoute: typeof manageproductsProductsIndexRoute
 }
@@ -117,6 +130,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/queue-orders/': {
+      id: '/queue-orders/'
+      path: '/queue-orders'
+      fullPath: '/queue-orders'
+      preLoaderRoute: typeof QueueOrdersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pos/': {
@@ -162,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   PosIndexRoute: PosIndexRoute,
+  QueueOrdersIndexRoute: QueueOrdersIndexRoute,
   manageproductsCategoriesIndexRoute: manageproductsCategoriesIndexRoute,
   manageproductsProductsIndexRoute: manageproductsProductsIndexRoute,
 }
