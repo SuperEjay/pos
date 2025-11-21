@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OrdersIndexRouteImport } from './routes/orders/index'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as manageproductsProductsIndexRouteImport } from './routes/(manage products)/products/index'
 import { Route as manageproductsCategoriesIndexRouteImport } from './routes/(manage products)/categories/index'
@@ -17,6 +18,11 @@ import { Route as manageproductsCategoriesIndexRouteImport } from './routes/(man
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrdersIndexRoute = OrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
@@ -40,12 +46,14 @@ const manageproductsCategoriesIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/orders': typeof OrdersIndexRoute
   '/categories': typeof manageproductsCategoriesIndexRoute
   '/products': typeof manageproductsProductsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/orders': typeof OrdersIndexRoute
   '/categories': typeof manageproductsCategoriesIndexRoute
   '/products': typeof manageproductsProductsIndexRoute
 }
@@ -53,18 +61,25 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/orders/': typeof OrdersIndexRoute
   '/(manage products)/categories/': typeof manageproductsCategoriesIndexRoute
   '/(manage products)/products/': typeof manageproductsProductsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo/tanstack-query' | '/categories' | '/products'
+  fullPaths:
+    | '/'
+    | '/demo/tanstack-query'
+    | '/orders'
+    | '/categories'
+    | '/products'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo/tanstack-query' | '/categories' | '/products'
+  to: '/' | '/demo/tanstack-query' | '/orders' | '/categories' | '/products'
   id:
     | '__root__'
     | '/'
     | '/demo/tanstack-query'
+    | '/orders/'
     | '/(manage products)/categories/'
     | '/(manage products)/products/'
   fileRoutesById: FileRoutesById
@@ -72,6 +87,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  OrdersIndexRoute: typeof OrdersIndexRoute
   manageproductsCategoriesIndexRoute: typeof manageproductsCategoriesIndexRoute
   manageproductsProductsIndexRoute: typeof manageproductsProductsIndexRoute
 }
@@ -83,6 +99,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/orders/': {
+      id: '/orders/'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof OrdersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/tanstack-query': {
@@ -112,6 +135,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  OrdersIndexRoute: OrdersIndexRoute,
   manageproductsCategoriesIndexRoute: manageproductsCategoriesIndexRoute,
   manageproductsProductsIndexRoute: manageproductsProductsIndexRoute,
 }
