@@ -8,10 +8,12 @@ import { getProduct } from '@/features/products/services/products.service'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
+import { useIsMobile } from '@/hooks/use-mobile'
 import type { PaymentMethod, OrderType } from '@/features/orders/types'
 import { ProductGrid } from './pos/product-grid'
 import { CartPanel } from './pos/cart-panel'
 import { VariantDialog } from './pos/variant-dialog'
+import { MobilePOSInterface } from './pos/mobile-pos-interface'
 
 interface CartItem {
   product_id: string
@@ -25,6 +27,7 @@ interface CartItem {
 
 export function POSInterface() {
   const navigate = useNavigate()
+  const isMobile = useIsMobile()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
@@ -253,6 +256,38 @@ export function POSInterface() {
     [selectedProductForVariant, productsWithVariants],
   )
 
+  // Render mobile version
+  if (isMobile) {
+    return (
+      <MobilePOSInterface
+        cart={cart}
+        customerName={customerName}
+        orderType={orderType}
+        deliveryFee={deliveryFee}
+        paymentMethod={paymentMethod}
+        notes={notes}
+        itemsTotal={itemsTotal}
+        total={total}
+        isCreatingOrder={isCreatingOrder}
+        productsWithVariants={productsWithVariants}
+        selectedProductForVariant={selectedProductForVariant}
+        showVariantDialog={showVariantDialog}
+        onCartChange={setCart}
+        onCustomerNameChange={setCustomerName}
+        onOrderTypeChange={setOrderType}
+        onDeliveryFeeChange={setDeliveryFee}
+        onPaymentMethodChange={setPaymentMethod}
+        onNotesChange={setNotes}
+        onProductsWithVariantsChange={setProductsWithVariants}
+        onSelectedProductForVariantChange={setSelectedProductForVariant}
+        onShowVariantDialogChange={setShowVariantDialog}
+        onCheckout={handleCheckout}
+        onClearCart={clearCart}
+      />
+    )
+  }
+
+  // Render desktop version
   return (
     <div className="h-screen flex flex-col bg-stone-50">
       {/* Header */}
