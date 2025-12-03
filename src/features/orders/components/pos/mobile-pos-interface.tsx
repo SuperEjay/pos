@@ -448,7 +448,7 @@ export function MobilePOSInterface({
             )}
           </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto px-8 py-5 space-y-5 safe-area-inset">
+          <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
             {/* Customer Name */}
             <div className="space-y-3">
               <Label
@@ -599,7 +599,7 @@ export function MobilePOSInterface({
                         variant="ghost"
                         size="sm"
                         onClick={() => removeFromCart(index)}
-                        className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 ml-2 rounded-full"
+                        className="h-9 w-9 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 ml-2 rounded-full"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
