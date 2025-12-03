@@ -1,4 +1,11 @@
-import { ChevronRight, List, Package, ShoppingCart, ScanLine, Clock } from 'lucide-react'
+import {
+  ChevronRight,
+  Clock,
+  List,
+  Package,
+  ScanLine,
+  ShoppingCart,
+} from 'lucide-react'
 import { useLocation } from '@tanstack/react-router'
 
 import {

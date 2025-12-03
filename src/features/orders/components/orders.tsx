@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
 
-import { PlusIcon } from 'lucide-react'
 import { useDeleteOrder, useGetOrders } from '../hooks'
 import { OrderModal } from './order-modal'
 import { OrderViewDialog } from './order-view-dialog'
@@ -9,7 +8,6 @@ import type { OrderTableRow } from './orders-table'
 import type { Order } from '@/features/orders/types'
 import type { GetOrdersFilters } from '../services/orders.service'
 
-import { Button } from '@/components/ui/button'
 import { Header } from '@/components'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useGetCategories } from '@/features/categories/hooks'
@@ -101,13 +99,6 @@ export default function Orders() {
         />
 
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-end">
-            <Button size="sm" onClick={handleCreate}>
-              <PlusIcon className="w-4 h-4" />
-              Add Order
-            </Button>
-          </div>
-
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Loading orders...
@@ -118,6 +109,7 @@ export default function Orders() {
               onView={handleView}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
+              onAddOrder={handleCreate}
               filters={filters}
               onFiltersChange={setFilters}
               categories={categories}

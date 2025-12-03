@@ -61,6 +61,7 @@ export const OrderModal = memo(function OrderModal({
       order_date: new Date().toISOString().split('T')[0],
       order_type: 'pickup',
       delivery_fee: null,
+      payment_method: null,
       items: [],
     },
   })
@@ -115,6 +116,7 @@ export const OrderModal = memo(function OrderModal({
           order_date: order.order_date.split('T')[0],
           order_type: order.order_type || 'pickup',
           delivery_fee: order.delivery_fee || null,
+          payment_method: order.payment_method || null,
           items: items,
         })
       } else if (!order) {
@@ -124,6 +126,7 @@ export const OrderModal = memo(function OrderModal({
           order_date: new Date().toISOString().split('T')[0],
           order_type: 'pickup',
           delivery_fee: null,
+          payment_method: null,
           items: [],
         })
       }
@@ -389,6 +392,33 @@ export const OrderModal = memo(function OrderModal({
                 )}
               </div>
             )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="payment_method">Payment Method</Label>
+              <Select
+                value={watch('payment_method') || 'none'}
+                onValueChange={(value) => {
+                  setValue('payment_method', value === 'none' ? null : (value as 'cash' | 'gcash'))
+                }}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger
+                  className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full"
+                >
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="gcash">GCash</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.payment_method && (
+                <p className="text-sm text-destructive">
+                  {errors.payment_method.message}
+                </p>
+              )}
+            </div>
 
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
