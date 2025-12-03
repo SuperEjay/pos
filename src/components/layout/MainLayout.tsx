@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Toaster } from 'sonner'
 
 import { SideBar } from '../navigation'
@@ -10,6 +11,17 @@ export default function MainLayout({
 }: {
   children: React.ReactNode
 }) {
+  const [currentDateTime, setCurrentDateTime] = useState(new Date())
+
+  useEffect(() => {
+    // Update date and time every second
+    const interval = setInterval(() => {
+      setCurrentDateTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div className={cn('flex flex-col min-h-screen')}>
       <SidebarProvider>
@@ -19,12 +31,12 @@ export default function MainLayout({
             <SidebarTrigger className="text-gray-500" />
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
             <p className="text-sm font-medium text-gray-500">
-              Welcome, John Doe
+              Welcome, Bro's
             </p>
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
             <p className="text-sm font-medium text-gray-500 ">
-              {new Date().toLocaleDateString()}{' '}
-              {new Date().toLocaleTimeString()}
+              {currentDateTime.toLocaleDateString()}{' '}
+              {currentDateTime.toLocaleTimeString()}
             </p>
           </div>
 

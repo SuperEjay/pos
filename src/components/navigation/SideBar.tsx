@@ -19,6 +19,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -72,6 +73,16 @@ export default function SideBar({
   const { pathname } = useLocation()
   return (
     <Sidebar variant={variant} className="">
+      <SidebarHeader className="p-4 border-b border-stone-200">
+        <div className="flex flex-col items-center justify-center gap-2">
+          <img
+            src="/deja-bros-logo.png"
+            alt="Deja Bros Logo"
+            className="h-16 w-16 object-contain"
+          />
+          <h2 className="text-lg font-bold text-stone-900">Deja Bros</h2>
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-gray-500 font-medium">

@@ -303,9 +303,16 @@ export function POSInterface() {
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Orders
             </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-stone-900">Point of Sale</h1>
-              <p className="text-sm text-stone-600">Create new orders</p>
+            <div className="flex items-center gap-3">
+              <img
+                src="/deja-bros-logo.png"
+                alt="Deja Bros"
+                className="h-10 w-10 object-contain"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-stone-900">Point of Sale</h1>
+                <p className="text-sm text-stone-600">Create new orders</p>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

@@ -288,12 +288,17 @@ export function MobilePOSInterface({
               variant="ghost"
               size="icon"
               onClick={() => navigate({ to: '/orders' })}
-              className="h-10 w-10 flex-shrink-0 rounded-full"
+              className="h-10 w-10 shrink-0 rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-stone-900">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <img
+                src="/deja-bros-logo.png"
+                alt="Deja Bros"
+                className="h-8 w-8 object-contain shrink-0"
+              />
+              <h1 className="text-xl font-bold text-stone-900 truncate">
                 Point of Sale
               </h1>
             </div>
@@ -302,7 +307,7 @@ export function MobilePOSInterface({
             variant="ghost"
             size="icon"
             onClick={() => setIsCartOpen(true)}
-            className="relative h-12 w-12 rounded-full flex-shrink-0"
+            className="relative h-12 w-12 rounded-full shrink-0"
           >
             <ShoppingCart className="w-6 h-6" />
             {cart.length > 0 && (
