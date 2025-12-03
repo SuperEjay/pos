@@ -7,7 +7,7 @@ export const Route = createFileRoute('/pos/')({
   head: () => ({
     meta: [
       {
-        title: 'CafePOS - Point of Sale',
+        title: 'Deja Bros - Point of Sale',
       },
     ],
   }),

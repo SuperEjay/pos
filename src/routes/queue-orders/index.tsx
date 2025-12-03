@@ -6,7 +6,7 @@ export const Route = createFileRoute('/queue-orders/')({
   head: () => ({
     meta: [
       {
-        title: 'CafePOS CMS - Order Queue',
+        title: 'Deja Bros CMS - Order Queue',
       },
     ],
   }),
