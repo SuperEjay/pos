@@ -36,6 +36,20 @@ export interface Order {
 }
 
 /**
+ * Order item add-on type definition
+ */
+export interface OrderItemAddOn {
+  id: string
+  order_item_id: string
+  name: string
+  value: string
+  price: number
+  quantity: number
+  created_at: string
+  updated_at: string | null
+}
+
+/**
  * Order item type definition
  */
 export interface OrderItem {
@@ -59,6 +73,7 @@ export interface OrderItemWithDetails extends OrderItem {
   variant_name?: string | null
   variant_sku?: string | null
   category_name?: string | null
+  add_ons?: OrderItemAddOn[]
 }
 
 /**

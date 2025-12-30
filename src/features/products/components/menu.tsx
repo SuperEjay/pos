@@ -244,6 +244,12 @@ export default function Menu() {
           variant_id: item.variant_id,
           quantity: item.quantity,
           price: item.price,
+          add_ons: (item.add_ons || []).map((addOn) => ({
+            name: addOn.name,
+            value: addOn.value,
+            price: addOn.price ?? 0,
+            quantity: addOn.quantity ?? 1,
+          })),
         })),
       },
       {

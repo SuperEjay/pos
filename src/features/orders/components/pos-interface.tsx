@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { ShoppingCart, ArrowLeft } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useGetProducts } from '@/features/products/hooks'
@@ -23,6 +23,7 @@ interface CartItem {
   quantity: number
   price: number
   subtotal: number
+  add_ons?: Array<{ name: string; value: string; price?: number; quantity?: number }>
 }
 
 export function POSInterface() {
@@ -39,6 +40,9 @@ export function POSInterface() {
   const [productsWithVariants, setProductsWithVariants] = useState<
     Record<string, any>
   >({})
+  const [variantAddOns, setVariantAddOns] = useState<
+    Record<string, Array<{ name: string; value: string }>>
+  >({})
   const [showVariantDialog, setShowVariantDialog] = useState(false)
   const [selectedProductForVariant, setSelectedProductForVariant] = useState<{
     productId: string
@@ -48,6 +52,42 @@ export function POSInterface() {
   const { data: products } = useGetProducts()
   const { data: categories } = useGetCategories()
   const { mutate: createOrder, isPending: isCreatingOrder } = useAddOrder()
+
+  // Filter out Add-ons category from display
+  const filteredCategories = useMemo(() => {
+    if (!categories) return []
+    return categories.filter((cat) => cat.name.toLowerCase() !== 'add-ons')
+  }, [categories])
+
+  // Reset selectedCategory if it's the Add-ons category
+  const addOnsCategoryId = useMemo(() => {
+    if (!categories) return null
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    return addOnsCategory?.id || null
+  }, [categories])
+
+  // Reset selectedCategory if it's Add-ons
+  useEffect(() => {
+    if (selectedCategory === addOnsCategoryId) {
+      setSelectedCategory(null)
+    }
+  }, [selectedCategory, addOnsCategoryId])
+
+  // Filter out Add-ons products from display
+  const filteredProducts = useMemo(() => {
+    if (!products || !categories) return []
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    if (!addOnsCategory) return products
+    return products.filter((p) => p.category_id !== addOnsCategory.id)
+  }, [products, categories])
+
+  // Get add-ons category products (for cart add-ons selection only)
+  const addOnsProducts = useMemo(() => {
+    if (!categories || !products) return []
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    if (!addOnsCategory) return []
+    return products.filter((p) => p.category_id === addOnsCategory.id && p.is_active)
+  }, [categories, products])
 
   // Fetch product with variants
   const fetchProductVariants = useCallback(
@@ -142,6 +182,13 @@ export function POSInterface() {
           variant.price ||
           productsWithVariants[selectedProductForVariant.productId]?.price ||
           0
+        // Store variant options for later use in cart
+        if (variant.options && variant.options.length > 0) {
+          setVariantAddOns((prev) => ({
+            ...prev,
+            [variant.id]: variant.options || [],
+          }))
+        }
         addToCart(
           selectedProductForVariant.productId,
           selectedProductForVariant.productName,
@@ -177,9 +224,10 @@ export function POSInterface() {
   const updateQuantity = useCallback((index: number, delta: number) => {
     setCart((prevCart) => {
       const newCart = [...prevCart]
-      newCart[index].quantity = Math.max(1, newCart[index].quantity + delta)
-      newCart[index].subtotal =
-        newCart[index].quantity * newCart[index].price
+      const item = newCart[index]
+      item.quantity = Math.max(1, item.quantity + delta)
+      // Recalculate base subtotal (without add-ons)
+      item.subtotal = item.quantity * item.price
       return newCart
     })
   }, [])
@@ -189,11 +237,17 @@ export function POSInterface() {
     setCart((prevCart) => prevCart.filter((_, i) => i !== index))
   }, [])
 
-  // Calculate total (items + delivery fee if delivery)
-  const itemsTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.subtotal, 0),
-    [cart],
-  )
+  // Calculate total (items + add-ons + delivery fee if delivery)
+  const itemsTotal = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      const baseSubtotal = item.subtotal
+      const addOnsTotal = (item.add_ons || []).reduce((addOnSum, addOn) => {
+        const addOnQuantity = addOn.quantity || 1
+        return addOnSum + (addOn.price || 0) * addOnQuantity * item.quantity
+      }, 0)
+      return sum + baseSubtotal + addOnsTotal
+    }, 0)
+  }, [cart])
   const total = useMemo(
     () => itemsTotal + (orderType === 'delivery' ? deliveryFee : 0),
     [itemsTotal, orderType, deliveryFee],
@@ -224,6 +278,12 @@ export function POSInterface() {
         variant_id: item.variant_id,
         quantity: item.quantity,
         price: item.price,
+        add_ons: (item.add_ons || []).map((addOn) => ({
+          name: addOn.name,
+          value: addOn.value,
+          price: addOn.price ?? 0,
+          quantity: addOn.quantity ?? 1,
+        })),
       })),
     }
 
@@ -246,6 +306,7 @@ export function POSInterface() {
   // Clear cart
   const clearCart = useCallback(() => {
     setCart([])
+    setVariantAddOns({})
   }, [])
 
   const selectedProductData = useMemo(
@@ -327,8 +388,8 @@ export function POSInterface() {
       <div className="flex-1 flex overflow-hidden">
         {/* Products Section */}
         <ProductGrid
-          products={products || []}
-          categories={categories}
+          products={filteredProducts || []}
+          categories={filteredCategories}
           selectedCategory={selectedCategory}
           searchQuery={searchQuery}
           onCategoryChange={setSelectedCategory}
@@ -356,6 +417,15 @@ export function POSInterface() {
           onRemoveItem={removeFromCart}
           onClearCart={clearCart}
           onCheckout={handleCheckout}
+          variantAddOns={variantAddOns}
+          addOnsProducts={addOnsProducts}
+          onAddOnsUpdate={(index, addOns) => {
+            setCart((prevCart) => {
+              const newCart = [...prevCart]
+              newCart[index].add_ons = addOns
+              return newCart
+            })
+          }}
         />
       </div>
 

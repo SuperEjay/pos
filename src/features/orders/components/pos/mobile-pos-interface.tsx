@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { ShoppingCart, ArrowLeft, X, Plus, Minus, Trash2 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { useGetProducts } from '@/features/products/hooks'
@@ -97,6 +97,26 @@ export function MobilePOSInterface({
 
   const { data: products } = useGetProducts()
   const { data: categories } = useGetCategories()
+
+  // Filter out Add-ons category from display
+  const filteredCategories = useMemo(() => {
+    if (!categories) return []
+    return categories.filter((cat) => cat.name.toLowerCase() !== 'add-ons')
+  }, [categories])
+
+  // Reset selectedCategory if it's the Add-ons category
+  const addOnsCategoryId = useMemo(() => {
+    if (!categories) return null
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    return addOnsCategory?.id || null
+  }, [categories])
+
+  // Reset selectedCategory if it's Add-ons
+  useEffect(() => {
+    if (selectedCategory === addOnsCategoryId) {
+      setSelectedCategory(null)
+    }
+  }, [selectedCategory, addOnsCategoryId])
 
   // Fetch product with variants
   const fetchProductVariants = useCallback(
@@ -260,7 +280,18 @@ export function MobilePOSInterface({
   )
 
   const filteredProducts = useMemo(() => {
-    return products?.filter((product) => {
+    if (!products || !categories) return []
+    
+    // Get Add-ons category ID to exclude
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    const addOnsCategoryId = addOnsCategory?.id
+    
+    return products.filter((product) => {
+      // Exclude Add-ons category products
+      if (addOnsCategoryId && product.category_id === addOnsCategoryId) {
+        return false
+      }
+      
       const matchesCategory =
         !selectedCategory || product.category_id === selectedCategory
       const matchesSearch =
@@ -268,7 +299,7 @@ export function MobilePOSInterface({
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesCategory && matchesSearch && product.is_active
     })
-  }, [products, selectedCategory, searchQuery])
+  }, [products, categories, selectedCategory, searchQuery])
 
   const selectedProductData = useMemo(
     () =>
@@ -367,7 +398,7 @@ export function MobilePOSInterface({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
-              {categories?.map((category) => (
+              {filteredCategories?.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
                 </SelectItem>

@@ -33,7 +33,18 @@ export const ProductGrid = memo(function ProductGrid({
   onProductClick,
 }: ProductGridProps) {
   const filteredProducts = useMemo(() => {
-    return products?.filter((product) => {
+    if (!products || !categories) return []
+    
+    // Get Add-ons category ID to exclude
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    const addOnsCategoryId = addOnsCategory?.id
+    
+    return products.filter((product) => {
+      // Exclude Add-ons category products
+      if (addOnsCategoryId && product.category_id === addOnsCategoryId) {
+        return false
+      }
+      
       const matchesCategory =
         !selectedCategory || product.category_id === selectedCategory
       const matchesSearch =
@@ -41,7 +52,7 @@ export const ProductGrid = memo(function ProductGrid({
         product.name.toLowerCase().includes(searchQuery.toLowerCase())
       return matchesCategory && matchesSearch && product.is_active
     })
-  }, [products, selectedCategory, searchQuery])
+  }, [products, categories, selectedCategory, searchQuery])
 
   const handleCategoryClick = useCallback(
     (categoryId: string | null) => {

@@ -1,6 +1,16 @@
 import { z } from 'zod'
 
 /**
+ * Zod schema for order item add-on validation
+ */
+const orderItemAddOnSchema = z.object({
+  name: z.string().min(1, 'Add-on name is required'),
+  value: z.string().min(1, 'Add-on value is required'),
+  price: z.union([z.number().nonnegative('Price must be non-negative'), z.undefined()]).transform((val) => val ?? 0),
+  quantity: z.union([z.number().int('Quantity must be an integer').positive('Quantity must be positive').min(1, 'Quantity must be at least 1'), z.undefined()]).transform((val) => val ?? 1),
+})
+
+/**
  * Zod schema for order item form validation
  */
 const orderItemSchema = z.object({
@@ -15,6 +25,7 @@ const orderItemSchema = z.object({
     .number()
     .positive('Price must be positive')
     .min(0.01, 'Price must be at least 0.01'),
+  add_ons: z.union([z.array(orderItemAddOnSchema), z.undefined()]).transform((val) => val ?? []),
 })
 
 /**

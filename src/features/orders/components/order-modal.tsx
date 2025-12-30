@@ -146,7 +146,7 @@ export const OrderModal = memo(function OrderModal({
     watch,
     control,
   } = useForm<OrderFormValues>({
-    resolver: zodResolver(orderFormSchema),
+    resolver: zodResolver(orderFormSchema) as any,
     defaultValues: {
       customer_name: '',
       status: 'pending',
@@ -272,6 +272,7 @@ export const OrderModal = memo(function OrderModal({
       variant_id: null,
       quantity: 1,
       price: 0,
+      add_ons: [],
     })
   }, [appendItem])
 
@@ -353,7 +354,7 @@ export const OrderModal = memo(function OrderModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit as any)}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">

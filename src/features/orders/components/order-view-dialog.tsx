@@ -208,58 +208,118 @@ export const OrderViewDialog = memo(function OrderViewDialog({
                 Order Items ({items.length})
               </h3>
               <div className="space-y-4">
-                {items.map((item: any, index: number) => (
-                  <div
-                    key={item.id || index}
-                    className="border border-stone-200 rounded-lg p-4 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-base">
-                        {item.product_name || 'Unknown Product'}
-                      </h4>
-                      <div className="text-sm font-semibold">
-                        ₱{Number(item.subtotal).toFixed(2)}
-                      </div>
-                    </div>
+                {items.map((item: any, index: number) => {
+                  const addOns = item.add_ons || []
+                  const addOnsTotal = addOns.reduce((sum: number, addOn: any) => {
+                    return sum + (addOn.price || 0) * (addOn.quantity || 1) * item.quantity
+                  }, 0)
+                  const itemTotal = Number(item.subtotal) + addOnsTotal
 
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <label className="text-muted-foreground">
-                          Product SKU
-                        </label>
-                        <p>{item.product_sku || 'N/A'}</p>
+                  return (
+                    <div
+                      key={item.id || index}
+                      className="border border-stone-200 rounded-lg p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-base">
+                          {item.product_name || 'Unknown Product'}
+                        </h4>
+                        <div className="text-sm font-semibold">
+                          ₱{itemTotal.toFixed(2)}
+                          {addOnsTotal > 0 && (
+                            <span className="text-xs text-stone-500 ml-1">
+                              (Base: ₱{Number(item.subtotal).toFixed(2)})
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-muted-foreground">
-                          Variant
-                        </label>
-                        <p>
-                          {item.variant_name
-                            ? `${item.variant_name}${item.variant_sku ? ` (${item.variant_sku})` : ''}`
-                            : 'N/A'}
-                        </p>
-                      </div>
-                      {item.category_name && (
+
+                      <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <label className="text-muted-foreground">
-                            Category
+                            Product SKU
                           </label>
-                          <p>{item.category_name}</p>
+                          <p>{item.product_sku || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="text-muted-foreground">
+                            Variant
+                          </label>
+                          <p>
+                            {item.variant_name
+                              ? `${item.variant_name}${item.variant_sku ? ` (${item.variant_sku})` : ''}`
+                              : 'N/A'}
+                          </p>
+                        </div>
+                        {item.category_name && (
+                          <div>
+                            <label className="text-muted-foreground">
+                              Category
+                            </label>
+                            <p>{item.category_name}</p>
+                          </div>
+                        )}
+                        <div>
+                          <label className="text-muted-foreground">Quantity</label>
+                          <p>{item.quantity}</p>
+                        </div>
+                        <div>
+                          <label className="text-muted-foreground">
+                            Unit Price
+                          </label>
+                          <p>₱{Number(item.price).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <label className="text-muted-foreground">
+                            Base Subtotal
+                          </label>
+                          <p className="font-semibold">
+                            ₱{Number(item.subtotal).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Add-ons Display */}
+                      {addOns.length > 0 && (
+                        <div className="pt-2 border-t border-stone-200">
+                          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                            Add-ons:
+                          </label>
+                          <div className="space-y-1">
+                            {addOns.map((addOn: any, addOnIndex: number) => {
+                              const addOnQuantity = addOn.quantity || 1
+                              const addOnTotal = (addOn.price || 0) * addOnQuantity * item.quantity
+                              return (
+                                <div
+                                  key={addOnIndex}
+                                  className="flex items-center justify-between text-sm bg-stone-50 rounded px-2 py-1"
+                                >
+                                  <span className="text-stone-700">
+                                    {addOn.name}: {addOn.value}
+                                    {addOnQuantity > 1 && (
+                                      <span className="text-stone-500 ml-1">×{addOnQuantity}</span>
+                                    )}
+                                  </span>
+                                  {addOn.price > 0 && (
+                                    <span className="font-semibold text-stone-900">
+                                      +₱{addOnTotal.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              )
+                            })}
+                            {addOnsTotal > 0 && (
+                              <div className="flex items-center justify-between text-sm font-semibold pt-1 border-t border-stone-200 mt-1">
+                                <span>Add-ons Total:</span>
+                                <span>₱{addOnsTotal.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
-                      <div>
-                        <label className="text-muted-foreground">Quantity</label>
-                        <p>{item.quantity}</p>
-                      </div>
-                      <div>
-                        <label className="text-muted-foreground">
-                          Unit Price
-                        </label>
-                        <p>₱{Number(item.price).toFixed(2)}</p>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

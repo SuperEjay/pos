@@ -29,7 +29,8 @@ export const getOrders = async (filters?: GetOrdersFilters) => {
           id,
           name,
           sku
-        )
+        ),
+        add_ons:order_item_add_ons(*)
       )
     `,
     )
@@ -87,6 +88,7 @@ export const getOrders = async (filters?: GetOrdersFilters) => {
       variant_name: item.variant?.name,
       variant_sku: item.variant?.sku,
       category_name: item.product?.category?.name,
+      add_ons: item.add_ons || [],
     })),
   }))
 }
@@ -112,7 +114,8 @@ export const getOrder = async (id: string) => {
           name,
           sku,
           price
-        )
+        ),
+        add_ons:order_item_add_ons(*)
       )
     `,
     )
@@ -131,16 +134,20 @@ export const getOrder = async (id: string) => {
       variant_name: item.variant?.name,
       variant_sku: item.variant?.sku,
       category_name: item.product?.category?.name,
+      add_ons: item.add_ons || [],
     })),
   }
 }
 
 export const addOrder = async (order: OrderFormValues) => {
-  // Calculate total from items
-  const itemsTotal = order.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  )
+  // Calculate total from items including add-ons
+  const itemsTotal = order.items.reduce((sum, item) => {
+    const baseSubtotal = item.price * item.quantity
+    const addOnsTotal = (item.add_ons || []).reduce((addOnSum, addOn) => {
+      return addOnSum + (addOn.price || 0) * (addOn.quantity || 1) * item.quantity
+    }, 0)
+    return sum + baseSubtotal + addOnsTotal
+  }, 0)
 
   // Add delivery fee if order type is delivery
   const deliveryFee = order.order_type === 'delivery' && order.delivery_fee
@@ -178,11 +185,43 @@ export const addOrder = async (order: OrderFormValues) => {
     subtotal: item.price * item.quantity,
   }))
 
-  const { error: itemsError } = await supabase
+  const { data: insertedItems, error: itemsError } = await supabase
     .from('order_items')
     .insert(itemsToInsert)
+    .select()
 
   if (itemsError) throw itemsError
+
+  // Insert add-ons for each order item
+  const addOnsToInsert: Array<{
+    order_item_id: string
+    name: string
+    value: string
+    price: number
+    quantity: number
+  }> = []
+
+  order.items.forEach((item, index) => {
+    if (item.add_ons && item.add_ons.length > 0 && insertedItems) {
+      item.add_ons.forEach((addOn) => {
+        addOnsToInsert.push({
+          order_item_id: insertedItems[index].id,
+          name: addOn.name,
+          value: addOn.value,
+          price: addOn.price || 0,
+          quantity: addOn.quantity || 1,
+        })
+      })
+    }
+  })
+
+  if (addOnsToInsert.length > 0) {
+    const { error: addOnsError } = await supabase
+      .from('order_item_add_ons')
+      .insert(addOnsToInsert)
+
+    if (addOnsError) throw addOnsError
+  }
 
   return orderData
 }
@@ -191,11 +230,14 @@ export const updateOrder = async ({
   id,
   ...order
 }: OrderFormValues & { id: string }) => {
-  // Calculate total from items
-  const itemsTotal = order.items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  )
+  // Calculate total from items including add-ons
+  const itemsTotal = order.items.reduce((sum, item) => {
+    const baseSubtotal = item.price * item.quantity
+    const addOnsTotal = (item.add_ons || []).reduce((addOnSum, addOn) => {
+      return addOnSum + (addOn.price || 0) * (addOn.quantity || 1) * item.quantity
+    }, 0)
+    return sum + baseSubtotal + addOnsTotal
+  }, 0)
 
   // Add delivery fee if order type is delivery
   const deliveryFee = order.order_type === 'delivery' && order.delivery_fee
@@ -224,7 +266,7 @@ export const updateOrder = async ({
 
   if (error) throw error
 
-  // Delete existing order items
+  // Delete existing order items (cascade will delete add-ons)
   await supabase.from('order_items').delete().eq('order_id', id)
 
   // Insert new order items
@@ -237,11 +279,43 @@ export const updateOrder = async ({
     subtotal: item.price * item.quantity,
   }))
 
-  const { error: itemsError } = await supabase
+  const { data: insertedItems, error: itemsError } = await supabase
     .from('order_items')
     .insert(itemsToInsert)
+    .select()
 
   if (itemsError) throw itemsError
+
+  // Insert add-ons for each order item
+  const addOnsToInsert: Array<{
+    order_item_id: string
+    name: string
+    value: string
+    price: number
+    quantity: number
+  }> = []
+
+  order.items.forEach((item, index) => {
+    if (item.add_ons && item.add_ons.length > 0 && insertedItems) {
+      item.add_ons.forEach((addOn) => {
+        addOnsToInsert.push({
+          order_item_id: insertedItems[index].id,
+          name: addOn.name,
+          value: addOn.value,
+          price: addOn.price || 0,
+          quantity: addOn.quantity || 1,
+        })
+      })
+    }
+  })
+
+  if (addOnsToInsert.length > 0) {
+    const { error: addOnsError } = await supabase
+      .from('order_item_add_ons')
+      .insert(addOnsToInsert)
+
+    if (addOnsError) throw addOnsError
+  }
 
   return data
 }
