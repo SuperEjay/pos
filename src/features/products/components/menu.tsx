@@ -10,9 +10,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
+import { CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { PaymentMethod } from '@/features/orders/types'
 
@@ -53,6 +56,7 @@ export default function Menu() {
   const [customerName, setCustomerName] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>('cash')
   const [notes, setNotes] = useState('')
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false)
 
   // Determine which category to show
   const activeCategoryId = useMemo(() => {
@@ -202,9 +206,9 @@ export default function Menu() {
       },
       {
         onSuccess: () => {
-          toast.success('Order placed successfully!')
           clearCart()
           setIsCartOpen(false)
+          setIsSuccessDialogOpen(true)
         },
         onError: (error: any) => {
           toast.error(error?.message || 'Failed to place order')
@@ -482,6 +486,63 @@ export default function Menu() {
           onClearCart={clearCart}
           onCheckout={handleCheckout}
         />
+
+        {/* Success Dialog */}
+        <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-stone-100 p-3">
+                  <CheckCircle2 className="h-12 w-12 text-stone-700" />
+                </div>
+              </div>
+              <DialogTitle className="text-2xl font-bold text-stone-900">
+                Order Placed Successfully!
+              </DialogTitle>
+              <DialogDescription className="text-base text-stone-600 pt-2">
+                Thank you for your order. Your order has been received and is being processed.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-3">
+              <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
+                <p className="text-sm font-medium text-stone-900 mb-2">
+                  Next Steps:
+                </p>
+                <p className="text-sm text-stone-700 leading-relaxed">
+                  Please communicate with the Deja Bros staff to confirm your order details and complete your payment.
+                </p>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-stone-50 border border-stone-300 rounded-lg">
+                <div className="flex-shrink-0 mt-0.5">
+                  <svg
+                    className="h-5 w-5 text-stone-700"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-sm text-stone-800">
+                  <strong>Important:</strong> Your order will be prepared once confirmed by our staff. Please wait for their confirmation.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => setIsSuccessDialogOpen(false)}
+                className="w-full sm:w-auto bg-stone-700 text-white hover:bg-stone-800"
+              >
+                Got it, thanks!
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )
