@@ -14,8 +14,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as QueueOrdersIndexRouteImport } from './routes/queue-orders/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
+import { Route as PortionControlsIndexRouteImport } from './routes/portion-controls/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
 import { Route as ExpensesIndexRouteImport } from './routes/expenses/index'
+import { Route as PortionControlsNewRouteImport } from './routes/portion-controls/new'
+import { Route as PortionControlsPortionControlIdRouteImport } from './routes/portion-controls/$portionControlId'
 import { Route as ExpensesNewRouteImport } from './routes/expenses/new'
 import { Route as ExpensesExpenseIdRouteImport } from './routes/expenses/$expenseId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -47,6 +50,11 @@ const PosIndexRoute = PosIndexRouteImport.update({
   path: '/pos/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortionControlsIndexRoute = PortionControlsIndexRouteImport.update({
+  id: '/portion-controls/',
+  path: '/portion-controls/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersIndexRoute = OrdersIndexRouteImport.update({
   id: '/orders/',
   path: '/orders/',
@@ -57,6 +65,17 @@ const ExpensesIndexRoute = ExpensesIndexRouteImport.update({
   path: '/expenses/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortionControlsNewRoute = PortionControlsNewRouteImport.update({
+  id: '/portion-controls/new',
+  path: '/portion-controls/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortionControlsPortionControlIdRoute =
+  PortionControlsPortionControlIdRouteImport.update({
+    id: '/portion-controls/$portionControlId',
+    path: '/portion-controls/$portionControlId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ExpensesNewRoute = ExpensesNewRouteImport.update({
   id: '/expenses/new',
   path: '/expenses/new',
@@ -91,8 +110,11 @@ export interface FileRoutesByFullPath {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
+  '/portion-controls/$portionControlId': typeof PortionControlsPortionControlIdRoute
+  '/portion-controls/new': typeof PortionControlsNewRoute
   '/expenses': typeof ExpensesIndexRoute
   '/orders': typeof OrdersIndexRoute
+  '/portion-controls': typeof PortionControlsIndexRoute
   '/pos': typeof PosIndexRoute
   '/queue-orders': typeof QueueOrdersIndexRoute
   '/reports': typeof ReportsIndexRoute
@@ -105,8 +127,11 @@ export interface FileRoutesByTo {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
+  '/portion-controls/$portionControlId': typeof PortionControlsPortionControlIdRoute
+  '/portion-controls/new': typeof PortionControlsNewRoute
   '/expenses': typeof ExpensesIndexRoute
   '/orders': typeof OrdersIndexRoute
+  '/portion-controls': typeof PortionControlsIndexRoute
   '/pos': typeof PosIndexRoute
   '/queue-orders': typeof QueueOrdersIndexRoute
   '/reports': typeof ReportsIndexRoute
@@ -120,8 +145,11 @@ export interface FileRoutesById {
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
+  '/portion-controls/$portionControlId': typeof PortionControlsPortionControlIdRoute
+  '/portion-controls/new': typeof PortionControlsNewRoute
   '/expenses/': typeof ExpensesIndexRoute
   '/orders/': typeof OrdersIndexRoute
+  '/portion-controls/': typeof PortionControlsIndexRoute
   '/pos/': typeof PosIndexRoute
   '/queue-orders/': typeof QueueOrdersIndexRoute
   '/reports/': typeof ReportsIndexRoute
@@ -136,8 +164,11 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/expenses/$expenseId'
     | '/expenses/new'
+    | '/portion-controls/$portionControlId'
+    | '/portion-controls/new'
     | '/expenses'
     | '/orders'
+    | '/portion-controls'
     | '/pos'
     | '/queue-orders'
     | '/reports'
@@ -150,8 +181,11 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/expenses/$expenseId'
     | '/expenses/new'
+    | '/portion-controls/$portionControlId'
+    | '/portion-controls/new'
     | '/expenses'
     | '/orders'
+    | '/portion-controls'
     | '/pos'
     | '/queue-orders'
     | '/reports'
@@ -164,8 +198,11 @@ export interface FileRouteTypes {
     | '/demo/tanstack-query'
     | '/expenses/$expenseId'
     | '/expenses/new'
+    | '/portion-controls/$portionControlId'
+    | '/portion-controls/new'
     | '/expenses/'
     | '/orders/'
+    | '/portion-controls/'
     | '/pos/'
     | '/queue-orders/'
     | '/reports/'
@@ -179,8 +216,11 @@ export interface RootRouteChildren {
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ExpensesExpenseIdRoute: typeof ExpensesExpenseIdRoute
   ExpensesNewRoute: typeof ExpensesNewRoute
+  PortionControlsPortionControlIdRoute: typeof PortionControlsPortionControlIdRoute
+  PortionControlsNewRoute: typeof PortionControlsNewRoute
   ExpensesIndexRoute: typeof ExpensesIndexRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
+  PortionControlsIndexRoute: typeof PortionControlsIndexRoute
   PosIndexRoute: typeof PosIndexRoute
   QueueOrdersIndexRoute: typeof QueueOrdersIndexRoute
   ReportsIndexRoute: typeof ReportsIndexRoute
@@ -225,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PosIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portion-controls/': {
+      id: '/portion-controls/'
+      path: '/portion-controls'
+      fullPath: '/portion-controls'
+      preLoaderRoute: typeof PortionControlsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders/': {
       id: '/orders/'
       path: '/orders'
@@ -237,6 +284,20 @@ declare module '@tanstack/react-router' {
       path: '/expenses'
       fullPath: '/expenses'
       preLoaderRoute: typeof ExpensesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portion-controls/new': {
+      id: '/portion-controls/new'
+      path: '/portion-controls/new'
+      fullPath: '/portion-controls/new'
+      preLoaderRoute: typeof PortionControlsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portion-controls/$portionControlId': {
+      id: '/portion-controls/$portionControlId'
+      path: '/portion-controls/$portionControlId'
+      fullPath: '/portion-controls/$portionControlId'
+      preLoaderRoute: typeof PortionControlsPortionControlIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/expenses/new': {
@@ -283,8 +344,11 @@ const rootRouteChildren: RootRouteChildren = {
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ExpensesExpenseIdRoute: ExpensesExpenseIdRoute,
   ExpensesNewRoute: ExpensesNewRoute,
+  PortionControlsPortionControlIdRoute: PortionControlsPortionControlIdRoute,
+  PortionControlsNewRoute: PortionControlsNewRoute,
   ExpensesIndexRoute: ExpensesIndexRoute,
   OrdersIndexRoute: OrdersIndexRoute,
+  PortionControlsIndexRoute: PortionControlsIndexRoute,
   PosIndexRoute: PosIndexRoute,
   QueueOrdersIndexRoute: QueueOrdersIndexRoute,
   ReportsIndexRoute: ReportsIndexRoute,
