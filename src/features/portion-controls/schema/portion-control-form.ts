@@ -11,16 +11,15 @@ const portionControlItemSchema = z.object({
     .min(1, 'Ingredient name is required')
     .max(200, 'Ingredient name must not exceed 200 characters')
     .trim(),
-  quantity: z
+  serving_size: z
     .number()
-    .positive('Quantity must be positive')
-    .min(0.001, 'Quantity must be at least 0.001'),
+    .positive('Serving size must be positive')
+    .min(0.001, 'Serving size must be at least 0.001'),
   unit: z
     .string()
     .min(1, 'Unit is required')
     .max(20, 'Unit must not exceed 20 characters')
-    .trim()
-    .default('pcs'),
+    .trim(),
   notes: z
     .string()
     .max(500, 'Notes must not exceed 500 characters')

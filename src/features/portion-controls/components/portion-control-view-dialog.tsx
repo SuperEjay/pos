@@ -160,7 +160,7 @@ export function PortionControlViewDialog({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Ingredient Name</TableHead>
-                      <TableHead>Quantity</TableHead>
+                      <TableHead>Serving Size</TableHead>
                       <TableHead>Unit</TableHead>
                       {items.some((item) => item.notes) && (
                         <TableHead>Notes</TableHead>
@@ -173,7 +173,7 @@ export function PortionControlViewDialog({
                         <TableCell className="font-medium">
                           {item.ingredient_name}
                         </TableCell>
-                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{item.serving_size}</TableCell>
                         <TableCell>{item.unit}</TableCell>
                         {items.some((i) => i.notes) && (
                           <TableCell className="text-muted-foreground">

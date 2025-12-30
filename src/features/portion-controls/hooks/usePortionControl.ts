@@ -6,6 +6,7 @@ import {
   getPortionControl,
   getPortionControls,
   getProductVariantOptions,
+  getGroupedProductVariants,
   updatePortionControl,
 } from '../services/portion-controls.service'
 import type { PortionControlFormValues } from '../schema/portion-control-form'
@@ -31,6 +32,13 @@ export const useGetProductVariantOptions = () => {
   return useQuery({
     queryKey: ['product-variant-options'],
     queryFn: getProductVariantOptions,
+  })
+}
+
+export const useGetGroupedProductVariants = () => {
+  return useQuery({
+    queryKey: ['grouped-product-variants'],
+    queryFn: getGroupedProductVariants,
   })
 }
 

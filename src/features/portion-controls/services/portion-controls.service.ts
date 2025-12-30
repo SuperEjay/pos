@@ -4,6 +4,7 @@ import type {
   PortionControlItem,
   PortionControlWithDetails,
   ProductVariantOption,
+  GroupedProductVariant,
 } from '../types'
 import supabase from '@/utils/supabase'
 
@@ -13,14 +14,34 @@ import supabase from '@/utils/supabase'
 export const getProductVariantOptions = async (): Promise<
   Array<ProductVariantOption>
 > => {
-  // Get all products
+  // Get categories to find add-ons category
+  const { data: categories, error: categoriesError } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('is_active', true)
+
+  if (categoriesError) throw categoriesError
+
+  // Find add-ons category (case-insensitive)
+  const addOnsCategory = categories?.find(
+    (cat) => cat.name.toLowerCase() === 'add-ons',
+  )
+  const addOnsCategoryId = addOnsCategory?.id
+
+  // Get all products, excluding add-ons
   const { data: products, error: productsError } = await supabase
     .from('products')
-    .select('id, name, is_active')
+    .select('id, name, is_active, category_id')
     .eq('is_active', true)
     .order('name', { ascending: true })
 
   if (productsError) throw productsError
+
+  // Filter out add-ons products
+  const filteredProducts =
+    addOnsCategoryId && products
+      ? products.filter((p) => p.category_id !== addOnsCategoryId)
+      : products || []
 
   // Get all variants
   const { data: variants, error: variantsError } = await supabase
@@ -33,7 +54,7 @@ export const getProductVariantOptions = async (): Promise<
   // Build options array
   const options: Array<ProductVariantOption> = []
 
-  products?.forEach((product) => {
+  filteredProducts.forEach((product) => {
     const productVariants = variants?.filter(
       (v) => v.product_id === product.id,
     ) || []
@@ -62,6 +83,81 @@ export const getProductVariantOptions = async (): Promise<
   })
 
   return options
+}
+
+/**
+ * Get grouped products with variants for display
+ */
+export const getGroupedProductVariants = async (): Promise<
+  Array<GroupedProductVariant>
+> => {
+  // Get categories to find add-ons category
+  const { data: categories, error: categoriesError } = await supabase
+    .from('categories')
+    .select('id, name')
+    .eq('is_active', true)
+
+  if (categoriesError) throw categoriesError
+
+  // Find add-ons category (case-insensitive)
+  const addOnsCategory = categories?.find(
+    (cat) => cat.name.toLowerCase() === 'add-ons',
+  )
+  const addOnsCategoryId = addOnsCategory?.id
+
+  // Get all products with categories, excluding add-ons
+  const { data: products, error: productsError } = await supabase
+    .from('products')
+    .select(
+      `
+      id,
+      name,
+      is_active,
+      category_id,
+      category:categories(name)
+    `,
+    )
+    .eq('is_active', true)
+    .order('name', { ascending: true })
+
+  if (productsError) throw productsError
+
+  // Filter out add-ons products
+  const filteredProducts =
+    addOnsCategoryId && products
+      ? products.filter((p) => p.category_id !== addOnsCategoryId)
+      : products || []
+
+  // Get all variants
+  const { data: variants, error: variantsError } = await supabase
+    .from('product_variants')
+    .select('id, product_id, name')
+    .order('name', { ascending: true })
+
+  if (variantsError) throw variantsError
+
+  // Build grouped structure
+  const grouped: Array<GroupedProductVariant> = []
+
+  filteredProducts.forEach((product: any) => {
+    const productVariants = variants?.filter(
+      (v) => v.product_id === product.id,
+    ) || []
+
+    grouped.push({
+      product_id: product.id,
+      product_name: product.name,
+      category_name: product.category?.name || null,
+      has_variants: productVariants.length > 0,
+      variants: productVariants.map((variant) => ({
+        id: `variant-${variant.id}`,
+        variant_id: variant.id,
+        name: variant.name,
+      })),
+    })
+  })
+
+  return grouped
 }
 
 /**
@@ -183,7 +279,7 @@ export const getPortionControl = async (
       ingredient_product_id: item.ingredient_product_id,
       ingredient_variant_id: item.ingredient_variant_id,
       ingredient_name: item.ingredient_name,
-      quantity: Number(item.quantity),
+      serving_size: Number(item.serving_size ?? item.quantity ?? 0),
       unit: item.unit,
       notes: item.notes,
       created_at: item.created_at,
@@ -248,7 +344,7 @@ export const addPortionControl = async (
       ingredient_product_id: item.ingredient_product_id || null,
       ingredient_variant_id: item.ingredient_variant_id || null,
       ingredient_name: item.ingredient_name,
-      quantity: item.quantity,
+      serving_size: item.serving_size,
       unit: item.unit,
       notes: item.notes || null,
     }))
@@ -341,7 +437,7 @@ export const updatePortionControl = async ({
       ingredient_product_id: item.ingredient_product_id || null,
       ingredient_variant_id: item.ingredient_variant_id || null,
       ingredient_name: item.ingredient_name,
-      quantity: item.quantity,
+      serving_size: item.serving_size,
       unit: item.unit,
       notes: item.notes || null,
     }))

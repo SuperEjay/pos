@@ -21,7 +21,7 @@ export interface PortionControlItem {
   ingredient_product_id: string | null
   ingredient_variant_id: string | null
   ingredient_name: string
-  quantity: number
+  serving_size: number
   unit: string
   notes: string | null
   created_at: string
@@ -48,5 +48,20 @@ export interface ProductVariantOption {
   product_name: string
   variant_id: string | null
   has_variants: boolean
+}
+
+/**
+ * Grouped product/variant structure for display
+ */
+export interface GroupedProductVariant {
+  product_id: string
+  product_name: string
+  category_name: string | null
+  has_variants: boolean
+  variants: Array<{
+    id: string
+    variant_id: string
+    name: string
+  }>
 }
 

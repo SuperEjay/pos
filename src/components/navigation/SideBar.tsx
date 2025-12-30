@@ -8,6 +8,7 @@ import {
   ScanLine,
   ShoppingCart,
   BarChart3,
+  ChefHat,
 } from 'lucide-react'
 import { useLocation } from '@tanstack/react-router'
 
@@ -73,6 +74,11 @@ const items = [
         title: 'Products',
         url: '/products',
         icon: Package,
+      },
+      {
+        title: 'Portion Controls',
+        url: '/portion-controls',
+        icon: ChefHat,
       },
     ],
   },
