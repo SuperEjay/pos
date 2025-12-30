@@ -27,6 +27,7 @@ interface CartItem {
   quantity: number
   price: number
   subtotal: number
+  add_ons?: Array<{ name: string; value: string; price?: number }>
 }
 
 export default function Menu() {
@@ -49,6 +50,9 @@ export default function Menu() {
   const [productsWithVariants, setProductsWithVariants] = useState<
     Record<string, any>
   >({})
+  const [variantAddOns, setVariantAddOns] = useState<
+    Record<string, Array<{ name: string; value: string }>>
+  >({})
   
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([])
@@ -58,19 +62,32 @@ export default function Menu() {
   const [notes, setNotes] = useState('')
   const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false)
 
+  // Get add-ons category products
+  const addOnsProducts = useMemo(() => {
+    if (!categories) return []
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    return addOnsCategory?.products || []
+  }, [categories])
+
+  // Filter out Add-ons category
+  const filteredCategories = useMemo(() => {
+    if (!categories) return []
+    return categories.filter((cat) => cat.name.toLowerCase() !== 'add-ons')
+  }, [categories])
+
   // Determine which category to show
   const activeCategoryId = useMemo(() => {
     if (selectedCategory) return selectedCategory
-    if (categories && categories.length > 0) return categories[0].id
+    if (filteredCategories && filteredCategories.length > 0) return filteredCategories[0].id
     return null
-  }, [selectedCategory, categories])
+  }, [selectedCategory, filteredCategories])
 
   // Filter products by selected category
   const filteredProducts = useMemo(() => {
-    if (!categories || !activeCategoryId) return []
-    const category = categories.find((cat) => cat.id === activeCategoryId)
+    if (!filteredCategories || !activeCategoryId) return []
+    const category = filteredCategories.find((cat) => cat.id === activeCategoryId)
     return category?.products || []
-  }, [categories, activeCategoryId])
+  }, [filteredCategories, activeCategoryId])
 
   // Calculate price range for products with variants
   const getPriceRange = useCallback(
@@ -167,13 +184,19 @@ export default function Menu() {
     setCustomerName('')
     setPaymentMethod('cash')
     setNotes('')
+    setVariantAddOns({})
   }, [])
 
-  // Calculate totals
-  const itemsTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.subtotal, 0),
-    [cart],
-  )
+  // Calculate totals including add-ons
+  const itemsTotal = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      const baseSubtotal = item.subtotal
+      const addOnsTotal = (item.add_ons || []).reduce((addOnSum, addOn) => {
+        return addOnSum + (addOn.price || 0) * item.quantity
+      }, 0)
+      return sum + baseSubtotal + addOnsTotal
+    }, 0)
+  }, [cart])
   const total = useMemo(
     () => itemsTotal,
     [itemsTotal],
@@ -188,6 +211,24 @@ export default function Menu() {
 
     const orderDate = new Date().toISOString().split('T')[0]
 
+    // Format add-ons information for notes
+    const addOnsNotes = cart
+      .map((item) => {
+        if (item.add_ons && item.add_ons.length > 0) {
+          const addOnsText = item.add_ons
+            .map((addOn) => `${addOn.name}: ${addOn.value}`)
+            .join(', ')
+          return `${item.product_name}${item.variant_name ? ` (${item.variant_name})` : ''}: ${addOnsText}`
+        }
+        return null
+      })
+      .filter(Boolean)
+      .join('; ')
+
+    const finalNotes = [notes.trim(), addOnsNotes]
+      .filter(Boolean)
+      .join(addOnsNotes && notes.trim() ? ' | ' : '') || null
+
     addOrder(
       {
         customer_name: customerName.trim(),
@@ -196,7 +237,7 @@ export default function Menu() {
         order_type: 'dine_in',
         delivery_fee: null,
         payment_method: paymentMethod || 'cash',
-        notes: notes.trim() || null,
+        notes: finalNotes,
         items: cart.map((item) => ({
           product_id: item.product_id,
           variant_id: item.variant_id,
@@ -264,9 +305,16 @@ export default function Menu() {
 
   // Handle variant selection
   const handleVariantSelect = useCallback(
-    (variant: { id: string; name: string; price: number | null }) => {
+    (variant: { id: string; name: string; price: number | null; options?: Array<{ name: string; value: string }> }) => {
       if (selectedProduct) {
         const variantPrice = variant.price || selectedProduct.basePrice || 0
+        // Store variant options for later use in cart
+        if (variant.options && variant.options.length > 0) {
+          setVariantAddOns((prev) => ({
+            ...prev,
+            [variant.id]: variant.options || [],
+          }))
+        }
         addToCart(
           selectedProduct.id,
           selectedProduct.name,
@@ -334,9 +382,9 @@ export default function Menu() {
           </div>
 
           {/* Category Navigation Tabs */}
-          {categories && categories.length > 0 && (
+          {filteredCategories && filteredCategories.length > 0 && (
             <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 -mx-3 sm:mx-0 px-3 sm:px-0">
-              {categories.map((category) => {
+              {filteredCategories.map((category) => {
                 const isSelected = activeCategoryId === category.id
                 return (
                   <button
@@ -485,6 +533,16 @@ export default function Menu() {
           onRemoveItem={removeFromCart}
           onClearCart={clearCart}
           onCheckout={handleCheckout}
+          variantAddOns={variantAddOns}
+          addOnsProducts={addOnsProducts}
+          onAddOnsUpdate={(index, addOns) => {
+            setCart((prevCart) => {
+              const newCart = [...prevCart]
+              newCart[index].add_ons = addOns
+              // Recalculate subtotal if needed (base subtotal stays the same, add-ons are calculated separately)
+              return newCart
+            })
+          }}
         />
 
         {/* Success Dialog */}
