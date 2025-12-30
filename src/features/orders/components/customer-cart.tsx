@@ -29,7 +29,7 @@ interface CartItem {
   quantity: number
   price: number
   subtotal: number
-  add_ons?: Array<{ name: string; value: string; price?: number }>
+  add_ons?: Array<{ name: string; value: string; price?: number; quantity?: number }>
 }
 
 interface AddOnProduct {
@@ -96,17 +96,24 @@ export const CustomerCart = memo(function CustomerCart({
     
     const item = cart[itemIndex]
     const currentAddOns = item.add_ons || []
-    const isSelected = currentAddOns.some(
+    const existingAddOnIndex = currentAddOns.findIndex(
       (a) => a.name === addOn.name && a.value === addOn.value
     )
 
-    let newAddOns: Array<{ name: string; value: string }>
-    if (isSelected) {
-      newAddOns = currentAddOns.filter(
-        (a) => !(a.name === addOn.name && a.value === addOn.value)
-      )
+    let newAddOns: Array<{ name: string; value: string; price?: number; quantity?: number }>
+    if (existingAddOnIndex >= 0) {
+      // Remove if quantity is 0 or doesn't exist, otherwise keep it
+      const existingAddOn = currentAddOns[existingAddOnIndex]
+      if (existingAddOn.quantity === 0 || !existingAddOn.quantity) {
+        newAddOns = currentAddOns.filter(
+          (a) => !(a.name === addOn.name && a.value === addOn.value)
+        )
+      } else {
+        newAddOns = [...currentAddOns]
+      }
     } else {
-      newAddOns = [...currentAddOns, addOn]
+      // Add with quantity 1
+      newAddOns = [...currentAddOns, { ...addOn, quantity: 1 }]
     }
 
     onAddOnsUpdate(itemIndex, newAddOns)
@@ -117,31 +124,73 @@ export const CustomerCart = memo(function CustomerCart({
     
     const item = cart[itemIndex]
     const currentAddOns = item.add_ons || []
-    const isSelected = currentAddOns.some(
+    const existingAddOnIndex = currentAddOns.findIndex(
       (a) => a.name === 'Add-on' && a.value === product.name
     )
 
-    let newAddOns: Array<{ name: string; value: string; price?: number }>
-    if (isSelected) {
-      newAddOns = currentAddOns.filter(
-        (a) => !(a.name === 'Add-on' && a.value === product.name)
-      )
+    let newAddOns: Array<{ name: string; value: string; price?: number; quantity?: number }>
+    if (existingAddOnIndex >= 0) {
+      // Remove if quantity is 0 or doesn't exist, otherwise keep it
+      const existingAddOn = currentAddOns[existingAddOnIndex]
+      if (existingAddOn.quantity === 0 || !existingAddOn.quantity) {
+        newAddOns = currentAddOns.filter(
+          (a) => !(a.name === 'Add-on' && a.value === product.name)
+        )
+      } else {
+        newAddOns = [...currentAddOns]
+      }
     } else {
+      // Add with quantity 1
       newAddOns = [...currentAddOns, { 
         name: 'Add-on', 
         value: product.name,
-        price: product.price || 0
+        price: product.price || 0,
+        quantity: 1
       }]
     }
 
     onAddOnsUpdate(itemIndex, newAddOns)
   }
 
+  const handleAddOnQuantityChange = (
+    itemIndex: number,
+    addOnName: string,
+    addOnValue: string,
+    delta: number
+  ) => {
+    if (!onAddOnsUpdate) return
+
+    const item = cart[itemIndex]
+    const currentAddOns = item.add_ons || []
+    const addOnIndex = currentAddOns.findIndex(
+      (a) => a.name === addOnName && a.value === addOnValue
+    )
+
+    if (addOnIndex >= 0) {
+      const newAddOns = [...currentAddOns]
+      const currentQuantity = newAddOns[addOnIndex].quantity || 1
+      const newQuantity = Math.max(0, currentQuantity + delta)
+
+      if (newQuantity === 0) {
+        // Remove add-on if quantity reaches 0
+        newAddOns.splice(addOnIndex, 1)
+      } else {
+        newAddOns[addOnIndex] = {
+          ...newAddOns[addOnIndex],
+          quantity: newQuantity
+        }
+      }
+
+      onAddOnsUpdate(itemIndex, newAddOns)
+    }
+  }
+
   // Calculate item subtotal including add-ons
   const calculateItemSubtotal = (item: CartItem) => {
     const baseSubtotal = item.subtotal
     const addOnsTotal = (item.add_ons || []).reduce((sum, addOn) => {
-      return sum + (addOn.price || 0) * item.quantity
+      const addOnQuantity = addOn.quantity || 1
+      return sum + (addOn.price || 0) * addOnQuantity * item.quantity
     }, 0)
     return baseSubtotal + addOnsTotal
   }
@@ -285,7 +334,7 @@ export const CustomerCart = memo(function CustomerCart({
                             <span className="font-semibold">
                               Customize with Add-ons {selectedAddOns.length > 0 && (
                                 <span className="text-stone-600 font-normal">
-                                  ({selectedAddOns.length} selected)
+                                  ({selectedAddOns.reduce((sum, a) => sum + (a.quantity || 1), 0)} items)
                                 </span>
                               )}
                             </span>
@@ -304,9 +353,11 @@ export const CustomerCart = memo(function CustomerCart({
                                     Options
                                   </div>
                                   {availableVariantAddOns.map((addOn, addOnIndex) => {
-                                    const isSelected = selectedAddOns.some(
+                                    const selectedAddOn = selectedAddOns.find(
                                       (a) => a.name === addOn.name && a.value === addOn.value
                                     )
+                                    const isSelected = !!selectedAddOn
+                                    const quantity = selectedAddOn?.quantity || 0
                                     return (
                                       <div
                                         key={`variant-${addOnIndex}`}
@@ -325,6 +376,35 @@ export const CustomerCart = memo(function CustomerCart({
                                           <span className="font-medium">{addOn.name}:</span>{' '}
                                           <span className="text-stone-600">{addOn.value}</span>
                                         </label>
+                                        {isSelected && (
+                                          <div className="flex items-center gap-1">
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleAddOnQuantityChange(index, addOn.name, addOn.value, -1)
+                                              }}
+                                              className="h-6 w-6 p-0"
+                                            >
+                                              <Minus className="w-3 h-3" />
+                                            </Button>
+                                            <span className="text-xs sm:text-sm font-semibold w-6 text-center">
+                                              {quantity}
+                                            </span>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleAddOnQuantityChange(index, addOn.name, addOn.value, 1)
+                                              }}
+                                              className="h-6 w-6 p-0"
+                                            >
+                                              <Plus className="w-3 h-3" />
+                                            </Button>
+                                          </div>
+                                        )}
                                       </div>
                                     )
                                   })}
@@ -344,9 +424,11 @@ export const CustomerCart = memo(function CustomerCart({
                                     </div>
                                   )}
                                   {addOnsProducts.map((product) => {
-                                    const isSelected = selectedAddOns.some(
+                                    const selectedAddOn = selectedAddOns.find(
                                       (a) => a.name === 'Add-on' && a.value === product.name
                                     )
+                                    const isSelected = !!selectedAddOn
+                                    const quantity = selectedAddOn?.quantity || 0
                                     const addOnPrice = product.price || 0
                                     return (
                                       <div
@@ -367,11 +449,42 @@ export const CustomerCart = memo(function CustomerCart({
                                             <span className="font-medium">{product.name}</span>
                                           </label>
                                         </div>
-                                        {addOnPrice > 0 && (
-                                          <span className="text-xs sm:text-sm font-semibold text-stone-900 whitespace-nowrap">
-                                            +₱{addOnPrice.toFixed(2)}
-                                          </span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                          {addOnPrice > 0 && (
+                                            <span className="text-xs sm:text-sm font-semibold text-stone-900 whitespace-nowrap">
+                                              +₱{addOnPrice.toFixed(2)}
+                                            </span>
+                                          )}
+                                          {isSelected && (
+                                            <div className="flex items-center gap-1">
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  handleAddOnQuantityChange(index, 'Add-on', product.name, -1)
+                                                }}
+                                                className="h-6 w-6 p-0"
+                                              >
+                                                <Minus className="w-3 h-3" />
+                                              </Button>
+                                              <span className="text-xs sm:text-sm font-semibold w-6 text-center">
+                                                {quantity}
+                                              </span>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  handleAddOnQuantityChange(index, 'Add-on', product.name, 1)
+                                                }}
+                                                className="h-6 w-6 p-0"
+                                              >
+                                                <Plus className="w-3 h-3" />
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     )
                                   })}
@@ -385,20 +498,26 @@ export const CustomerCart = memo(function CustomerCart({
                                 Selected:
                               </div>
                               <div className="flex flex-wrap gap-1.5">
-                                {selectedAddOns.map((addOn, addOnIndex) => (
-                                  <Badge
-                                    key={addOnIndex}
-                                    variant="secondary"
-                                    className="text-[9px] sm:text-[10px] bg-stone-200 text-stone-700 px-2 py-0.5"
-                                  >
-                                    {addOn.name}: {addOn.value}
-                                    {addOn.price !== undefined && addOn.price > 0 && (
-                                      <span className="ml-1 font-semibold">
-                                        +₱{(addOn.price * item.quantity).toFixed(2)}
-                                      </span>
-                                    )}
-                                  </Badge>
-                                ))}
+                                {selectedAddOns.map((addOn, addOnIndex) => {
+                                  const addOnQuantity = addOn.quantity || 1
+                                  return (
+                                    <Badge
+                                      key={addOnIndex}
+                                      variant="secondary"
+                                      className="text-[9px] sm:text-[10px] bg-stone-200 text-stone-700 px-2 py-0.5"
+                                    >
+                                      {addOn.name}: {addOn.value}
+                                      {addOnQuantity > 1 && (
+                                        <span className="ml-1 font-semibold">×{addOnQuantity}</span>
+                                      )}
+                                      {addOn.price !== undefined && addOn.price > 0 && (
+                                        <span className="ml-1 font-semibold">
+                                          +₱{(addOn.price * addOnQuantity * item.quantity).toFixed(2)}
+                                        </span>
+                                      )}
+                                    </Badge>
+                                  )
+                                })}
                               </div>
                             </div>
                           )}

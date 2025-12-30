@@ -27,7 +27,7 @@ interface CartItem {
   quantity: number
   price: number
   subtotal: number
-  add_ons?: Array<{ name: string; value: string; price?: number }>
+  add_ons?: Array<{ name: string; value: string; price?: number; quantity?: number }>
 }
 
 export default function Menu() {
@@ -192,7 +192,8 @@ export default function Menu() {
     return cart.reduce((sum, item) => {
       const baseSubtotal = item.subtotal
       const addOnsTotal = (item.add_ons || []).reduce((addOnSum, addOn) => {
-        return addOnSum + (addOn.price || 0) * item.quantity
+        const addOnQuantity = addOn.quantity || 1
+        return addOnSum + (addOn.price || 0) * addOnQuantity * item.quantity
       }, 0)
       return sum + baseSubtotal + addOnsTotal
     }, 0)
