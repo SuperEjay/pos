@@ -13,7 +13,6 @@ import {
 import { portionControlFormSchema } from '../schema/portion-control-form'
 import type { PortionControlFormValues } from '../schema/portion-control-form'
 import type { PortionControlWithDetails } from '../types'
-import { useGetProducts } from '@/features/products/hooks'
 import { getProduct } from '@/features/products/services/products.service'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,83 +44,6 @@ import {
 
 interface PortionControlFormProps {
   portionControl?: PortionControlWithDetails | null
-}
-
-// Product Combobox for ingredient selection
-function ProductCombobox({
-  value,
-  onValueChange,
-  products,
-  disabled,
-}: {
-  value: string
-  onValueChange: (value: string) => void
-  products: Array<{ id: string; name: string }>
-  disabled?: boolean
-}) {
-  const [open, setOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  const selectedProduct = products.find((p) => p.id === value)
-
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery) return products
-    return products.filter((product) =>
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
-  }, [products, searchQuery])
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className="w-full justify-between bg-white border-stone-300 hover:bg-stone-50 text-left font-normal"
-        >
-          <span className="truncate">
-            {selectedProduct ? selectedProduct.name : 'Select product...'}
-          </span>
-          <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search products..."
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
-          <CommandList>
-            <CommandEmpty>No products found.</CommandEmpty>
-            <CommandGroup>
-              {filteredProducts.map((product) => (
-                <CommandItem
-                  key={product.id}
-                  value={product.name}
-                  onSelect={() => {
-                    onValueChange(product.id)
-                    setOpen(false)
-                    setSearchQuery('')
-                  }}
-                >
-                  <CheckIcon
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === product.id ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  {product.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
 }
 
 // Product/Variant Combobox for recipe selection (searchable with grouping)
@@ -312,7 +234,6 @@ export function PortionControlForm({
 
   const { data: productVariantOptions } = useGetProductVariantOptions()
   const { data: groupedProductVariants } = useGetGroupedProductVariants()
-  const { data: products } = useGetProducts()
 
   const [selectedProductVariant, setSelectedProductVariant] = useState<{
     product_id: string
@@ -330,7 +251,6 @@ export function PortionControlForm({
     reset,
     control,
     setValue,
-    watch,
   } = useForm<PortionControlFormValues>({
     resolver: zodResolver(portionControlFormSchema),
     defaultValues: {
@@ -392,7 +312,7 @@ export function PortionControlForm({
           serving_size: item.serving_size,
           unit: item.unit,
           notes: item.notes || null,
-        })) || [{ ingredient_name: '', quantity: 1, unit: 'pcs' }],
+        })) || [{ ingredient_name: '', serving_size: 1, unit: 'pcs' }],
       })
 
       // Fetch variants for the product

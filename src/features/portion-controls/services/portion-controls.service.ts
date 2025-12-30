@@ -1,7 +1,5 @@
 import type { PortionControlFormValues } from '../schema/portion-control-form'
 import type {
-  PortionControl,
-  PortionControlItem,
   PortionControlWithDetails,
   ProductVariantOption,
   GroupedProductVariant,

@@ -9,7 +9,6 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { PortionControlWithDetails } from '../types'
 import { Button } from '@/components/ui/button'
 import { DataTable } from '@/components/ui/data-table'
-import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
