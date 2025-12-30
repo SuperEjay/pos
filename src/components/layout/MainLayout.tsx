@@ -4,6 +4,7 @@ import { Toaster } from 'sonner'
 import { SideBar } from '../navigation'
 import { Separator } from '../ui/separator'
 import { SidebarProvider, SidebarTrigger } from '../ui/sidebar'
+import { OrderNotificationBar } from '../notifications/order-notification-bar'
 import { cn } from '@/lib/utils'
 
 export default function MainLayout({
@@ -28,6 +29,8 @@ export default function MainLayout({
         <SideBar variant="floating" />
         <main className="bg-stone-100 p-6 w-full flex flex-col flex-1 gap-6">
           <div className="flex items-center justify-end gap-2">
+            <OrderNotificationBar />
+            <Separator orientation="vertical" className="bg-gray-500 h-4" />
             <SidebarTrigger className="text-gray-500" />
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
             <p className="text-sm font-medium text-gray-500">Welcome, Bro's</p>

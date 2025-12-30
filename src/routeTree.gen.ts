@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MenuRouteImport } from './routes/menu'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as QueueOrdersIndexRouteImport } from './routes/queue-orders/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
@@ -20,6 +21,11 @@ import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-qu
 import { Route as manageproductsProductsIndexRouteImport } from './routes/(manage products)/products/index'
 import { Route as manageproductsCategoriesIndexRouteImport } from './routes/(manage products)/categories/index'
 
+const MenuRoute = MenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -75,6 +81,7 @@ const manageproductsCategoriesIndexRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/menu': typeof MenuRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/menu': typeof MenuRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/menu': typeof MenuRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
@@ -114,6 +123,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/menu'
     | '/demo/tanstack-query'
     | '/expenses/$expenseId'
     | '/expenses/new'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/menu'
     | '/demo/tanstack-query'
     | '/expenses/$expenseId'
     | '/expenses/new'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/menu'
     | '/demo/tanstack-query'
     | '/expenses/$expenseId'
     | '/expenses/new'
@@ -151,6 +163,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MenuRoute: typeof MenuRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   ExpensesExpenseIdRoute: typeof ExpensesExpenseIdRoute
   ExpensesNewRoute: typeof ExpensesNewRoute
@@ -164,6 +177,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/menu': {
+      id: '/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof MenuRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -239,6 +259,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MenuRoute: MenuRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   ExpensesExpenseIdRoute: ExpensesExpenseIdRoute,
   ExpensesNewRoute: ExpensesNewRoute,

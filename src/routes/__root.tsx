@@ -23,8 +23,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 function RootComponent() {
   const location = useLocation()
   const isPOS = location.pathname.startsWith('/pos')
+  const isMenu = location.pathname.startsWith('/menu')
 
-  if (isPOS) {
+  // Public pages (no layout)
+  if (isPOS || isMenu) {
     return (
       <>
         <HeadContent />
@@ -45,6 +47,7 @@ function RootComponent() {
     )
   }
 
+  // Admin pages (with MainLayout)
   return (
     <>
       <MainLayout>
