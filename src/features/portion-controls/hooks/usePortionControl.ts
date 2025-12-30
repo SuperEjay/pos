@@ -5,6 +5,7 @@ import {
   deletePortionControl,
   getPortionControl,
   getPortionControls,
+  getPortionControlsGroupedByCategory,
   getProductVariantOptions,
   getGroupedProductVariants,
   updatePortionControl,
@@ -42,6 +43,13 @@ export const useGetGroupedProductVariants = () => {
   })
 }
 
+export const useGetPortionControlsGroupedByCategory = () => {
+  return useQuery({
+    queryKey: ['portion-controls-grouped'],
+    queryFn: getPortionControlsGroupedByCategory,
+  })
+}
+
 export const useAddPortionControl = () => {
   const queryClient = useQueryClient()
   return useMutation({
@@ -49,7 +57,9 @@ export const useAddPortionControl = () => {
     onSuccess: () => {
       toast.success('Recipe created successfully')
       queryClient.invalidateQueries({ queryKey: ['portion-controls'] })
+      queryClient.invalidateQueries({ queryKey: ['portion-controls-grouped'] })
       queryClient.invalidateQueries({ queryKey: ['product-variant-options'] })
+      queryClient.invalidateQueries({ queryKey: ['grouped-product-variants'] })
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to create recipe')
@@ -68,8 +78,10 @@ export const useUpdatePortionControl = () => {
     onSuccess: () => {
       toast.success('Recipe updated successfully')
       queryClient.invalidateQueries({ queryKey: ['portion-controls'] })
+      queryClient.invalidateQueries({ queryKey: ['portion-controls-grouped'] })
       queryClient.invalidateQueries({ queryKey: ['portion-control'] })
       queryClient.invalidateQueries({ queryKey: ['product-variant-options'] })
+      queryClient.invalidateQueries({ queryKey: ['grouped-product-variants'] })
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Failed to update recipe')
@@ -84,7 +96,9 @@ export const useDeletePortionControl = () => {
     onSuccess: () => {
       toast.success('Recipe deleted successfully')
       queryClient.invalidateQueries({ queryKey: ['portion-controls'] })
+      queryClient.invalidateQueries({ queryKey: ['portion-controls-grouped'] })
       queryClient.invalidateQueries({ queryKey: ['product-variant-options'] })
+      queryClient.invalidateQueries({ queryKey: ['grouped-product-variants'] })
     },
     onError: () => {
       toast.error('Failed to delete recipe')

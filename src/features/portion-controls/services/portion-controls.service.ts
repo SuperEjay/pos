@@ -37,6 +37,21 @@ export const getProductVariantOptions = async (): Promise<
 
   if (productsError) throw productsError
 
+  // Get all existing recipes to filter out products that already have recipes
+  const { data: existingRecipes } = await supabase
+    .from('portion_controls')
+    .select('product_id, variant_id')
+
+  // Create a set of product-variant combinations that already have recipes
+  const existingRecipeKeys = new Set<string>()
+  existingRecipes?.forEach((recipe: any) => {
+    if (recipe.variant_id) {
+      existingRecipeKeys.add(`variant-${recipe.variant_id}`)
+    } else {
+      existingRecipeKeys.add(`product-${recipe.product_id}`)
+    }
+  })
+
   // Filter out add-ons products
   const filteredProducts =
     addOnsCategoryId && products
@@ -51,7 +66,7 @@ export const getProductVariantOptions = async (): Promise<
 
   if (variantsError) throw variantsError
 
-  // Build options array
+  // Build options array, filtering out products/variants that already have recipes
   const options: Array<ProductVariantOption> = []
 
   filteredProducts.forEach((product) => {
@@ -59,18 +74,28 @@ export const getProductVariantOptions = async (): Promise<
       (v) => v.product_id === product.id,
     ) || []
 
-    // Add base product option (no variant)
-    options.push({
-      id: `product-${product.id}`,
-      name: product.name,
-      product_id: product.id,
-      product_name: product.name,
-      variant_id: null,
-      has_variants: productVariants.length > 0,
-    })
+    // Check if base product already has a recipe
+    const productHasRecipe = existingRecipeKeys.has(`product-${product.id}`)
 
-    // Add variant options
-    productVariants.forEach((variant) => {
+    // Filter variants that don't have recipes
+    const availableVariants = productVariants.filter(
+      (variant) => !existingRecipeKeys.has(`variant-${variant.id}`),
+    )
+
+    // Only add base product option if it doesn't have a recipe yet
+    if (!productHasRecipe && productVariants.length === 0) {
+      options.push({
+        id: `product-${product.id}`,
+        name: product.name,
+        product_id: product.id,
+        product_name: product.name,
+        variant_id: null,
+        has_variants: false,
+      })
+    }
+
+    // Add variant options that don't have recipes
+    availableVariants.forEach((variant) => {
       options.push({
         id: `variant-${variant.id}`,
         name: `${product.name} - ${variant.name}`,
@@ -105,6 +130,21 @@ export const getGroupedProductVariants = async (): Promise<
   )
   const addOnsCategoryId = addOnsCategory?.id
 
+  // Get all existing recipes to filter out products that already have recipes
+  const { data: existingRecipes } = await supabase
+    .from('portion_controls')
+    .select('product_id, variant_id')
+
+  // Create a set of product-variant combinations that already have recipes
+  const existingRecipeKeys = new Set<string>()
+  existingRecipes?.forEach((recipe: any) => {
+    if (recipe.variant_id) {
+      existingRecipeKeys.add(`variant-${recipe.variant_id}`)
+    } else {
+      existingRecipeKeys.add(`product-${recipe.product_id}`)
+    }
+  })
+
   // Get all products with categories, excluding add-ons
   const { data: products, error: productsError } = await supabase
     .from('products')
@@ -123,7 +163,7 @@ export const getGroupedProductVariants = async (): Promise<
   if (productsError) throw productsError
 
   // Filter out add-ons products
-  const filteredProducts =
+  let filteredProducts =
     addOnsCategoryId && products
       ? products.filter((p) => p.category_id !== addOnsCategoryId)
       : products || []
@@ -136,7 +176,7 @@ export const getGroupedProductVariants = async (): Promise<
 
   if (variantsError) throw variantsError
 
-  // Build grouped structure
+  // Build grouped structure, filtering out products/variants that already have recipes
   const grouped: Array<GroupedProductVariant> = []
 
   filteredProducts.forEach((product: any) => {
@@ -144,17 +184,33 @@ export const getGroupedProductVariants = async (): Promise<
       (v) => v.product_id === product.id,
     ) || []
 
-    grouped.push({
-      product_id: product.id,
-      product_name: product.name,
-      category_name: product.category?.name || null,
-      has_variants: productVariants.length > 0,
-      variants: productVariants.map((variant) => ({
-        id: `variant-${variant.id}`,
-        variant_id: variant.id,
-        name: variant.name,
-      })),
-    })
+    // Check if base product already has a recipe
+    const productHasRecipe = existingRecipeKeys.has(`product-${product.id}`)
+
+    // Filter variants that don't have recipes
+    const availableVariants = productVariants.filter(
+      (variant) => !existingRecipeKeys.has(`variant-${variant.id}`),
+    )
+
+    // Only include product if:
+    // 1. It has no variants and doesn't have a recipe yet, OR
+    // 2. It has variants and at least one variant doesn't have a recipe
+    if (
+      (!productHasRecipe && productVariants.length === 0) ||
+      (availableVariants.length > 0)
+    ) {
+      grouped.push({
+        product_id: product.id,
+        product_name: product.name,
+        category_name: product.category?.name || null,
+        has_variants: productVariants.length > 0,
+        variants: availableVariants.map((variant) => ({
+          id: `variant-${variant.id}`,
+          variant_id: variant.id,
+          name: variant.name,
+        })),
+      })
+    }
   })
 
   return grouped
@@ -199,7 +255,7 @@ export const getPortionControls = async (): Promise<
     .select(
       `
       *,
-      product:products(name),
+      product:products(name, category_id, category:categories(id, name)),
       variant:product_variants(name)
     `,
     )
@@ -233,8 +289,49 @@ export const getPortionControls = async (): Promise<
     updated_at: pc.updated_at,
     product_name: pc.product?.name || null,
     variant_name: pc.variant?.name || null,
+    category_id: pc.product?.category_id || null,
+    category_name: pc.product?.category?.name || null,
     items_count: countsMap.get(pc.id) || 0,
   }))
+}
+
+/**
+ * Get portion controls grouped by category
+ */
+export const getPortionControlsGroupedByCategory = async (): Promise<
+  Array<{
+    id: string
+    name: string
+    recipes: Array<PortionControlWithDetails>
+  }>
+> => {
+  const portionControls = await getPortionControls()
+
+  // Group by category
+  const categoryMap = new Map<
+    string,
+    { id: string; name: string; recipes: Array<PortionControlWithDetails> }
+  >()
+
+  portionControls.forEach((pc) => {
+    const categoryId = pc.category_id || 'uncategorized'
+    const categoryName = pc.category_name || 'Uncategorized'
+
+    if (!categoryMap.has(categoryId)) {
+      categoryMap.set(categoryId, {
+        id: categoryId,
+        name: categoryName,
+        recipes: [],
+      })
+    }
+
+    categoryMap.get(categoryId)!.recipes.push(pc)
+  })
+
+  // Convert to array and sort by category name
+  return Array.from(categoryMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  )
 }
 
 /**

@@ -34,6 +34,8 @@ export interface PortionControlItem {
 export interface PortionControlWithDetails extends PortionControl {
   product_name?: string
   variant_name?: string | null
+  category_id?: string | null
+  category_name?: string | null
   items?: Array<PortionControlItem>
   items_count?: number
 }
