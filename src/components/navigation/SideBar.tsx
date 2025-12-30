@@ -3,6 +3,7 @@ import {
   Clock,
   List,
   Package,
+  Receipt,
   ScanLine,
   ShoppingCart,
 } from 'lucide-react'
@@ -45,6 +46,11 @@ const items = [
     title: 'Orders',
     url: '/orders',
     icon: ShoppingCart,
+  },
+  {
+    title: 'Expenses',
+    url: '/expenses',
+    icon: Receipt,
   },
   {
     title: 'Manage Products',

@@ -13,6 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as QueueOrdersIndexRouteImport } from './routes/queue-orders/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
+import { Route as ExpensesIndexRouteImport } from './routes/expenses/index'
+import { Route as ExpensesNewRouteImport } from './routes/expenses/new'
+import { Route as ExpensesExpenseIdRouteImport } from './routes/expenses/$expenseId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as manageproductsProductsIndexRouteImport } from './routes/(manage products)/products/index'
 import { Route as manageproductsCategoriesIndexRouteImport } from './routes/(manage products)/categories/index'
@@ -37,6 +40,21 @@ const OrdersIndexRoute = OrdersIndexRouteImport.update({
   path: '/orders/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExpensesIndexRoute = ExpensesIndexRouteImport.update({
+  id: '/expenses/',
+  path: '/expenses/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpensesNewRoute = ExpensesNewRouteImport.update({
+  id: '/expenses/new',
+  path: '/expenses/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExpensesExpenseIdRoute = ExpensesExpenseIdRouteImport.update({
+  id: '/expenses/$expenseId',
+  path: '/expenses/$expenseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -58,6 +76,9 @@ const manageproductsCategoriesIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
+  '/expenses/new': typeof ExpensesNewRoute
+  '/expenses': typeof ExpensesIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/pos': typeof PosIndexRoute
   '/queue-orders': typeof QueueOrdersIndexRoute
@@ -67,6 +88,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
+  '/expenses/new': typeof ExpensesNewRoute
+  '/expenses': typeof ExpensesIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/pos': typeof PosIndexRoute
   '/queue-orders': typeof QueueOrdersIndexRoute
@@ -77,6 +101,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
+  '/expenses/new': typeof ExpensesNewRoute
+  '/expenses/': typeof ExpensesIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/pos/': typeof PosIndexRoute
   '/queue-orders/': typeof QueueOrdersIndexRoute
@@ -88,6 +115,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/demo/tanstack-query'
+    | '/expenses/$expenseId'
+    | '/expenses/new'
+    | '/expenses'
     | '/orders'
     | '/pos'
     | '/queue-orders'
@@ -97,6 +127,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/demo/tanstack-query'
+    | '/expenses/$expenseId'
+    | '/expenses/new'
+    | '/expenses'
     | '/orders'
     | '/pos'
     | '/queue-orders'
@@ -106,6 +139,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/demo/tanstack-query'
+    | '/expenses/$expenseId'
+    | '/expenses/new'
+    | '/expenses/'
     | '/orders/'
     | '/pos/'
     | '/queue-orders/'
@@ -116,6 +152,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  ExpensesExpenseIdRoute: typeof ExpensesExpenseIdRoute
+  ExpensesNewRoute: typeof ExpensesNewRoute
+  ExpensesIndexRoute: typeof ExpensesIndexRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   PosIndexRoute: typeof PosIndexRoute
   QueueOrdersIndexRoute: typeof QueueOrdersIndexRoute
@@ -153,6 +192,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrdersIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/expenses/': {
+      id: '/expenses/'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof ExpensesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expenses/new': {
+      id: '/expenses/new'
+      path: '/expenses/new'
+      fullPath: '/expenses/new'
+      preLoaderRoute: typeof ExpensesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/expenses/$expenseId': {
+      id: '/expenses/$expenseId'
+      path: '/expenses/$expenseId'
+      fullPath: '/expenses/$expenseId'
+      preLoaderRoute: typeof ExpensesExpenseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -180,6 +240,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  ExpensesExpenseIdRoute: ExpensesExpenseIdRoute,
+  ExpensesNewRoute: ExpensesNewRoute,
+  ExpensesIndexRoute: ExpensesIndexRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   PosIndexRoute: PosIndexRoute,
   QueueOrdersIndexRoute: QueueOrdersIndexRoute,
