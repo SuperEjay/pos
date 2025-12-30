@@ -1,15 +1,24 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, Search } from 'lucide-react'
+import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, Search, MoreHorizontal, List } from 'lucide-react'
 import {
   useGetPortionControlsGroupedByCategory,
   useDeletePortionControl,
 } from '../hooks'
 import { PortionControlViewDialog } from './portion-control-view-dialog'
+import { PortionControlItemsDialog } from './portion-control-items-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 
 export function PortionControls() {
@@ -24,6 +33,9 @@ export function PortionControls() {
     useState<string | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [portionControlToView, setPortionControlToView] =
+    useState<string | null>(null)
+  const [itemsDialogOpen, setItemsDialogOpen] = useState(false)
+  const [portionControlToViewItems, setPortionControlToViewItems] =
     useState<string | null>(null)
 
   // Determine which category to show
@@ -62,6 +74,11 @@ export function PortionControls() {
   const handleView = useCallback((portionControlId: string) => {
     setPortionControlToView(portionControlId)
     setViewDialogOpen(true)
+  }, [])
+
+  const handleViewItems = useCallback((portionControlId: string) => {
+    setPortionControlToViewItems(portionControlId)
+    setItemsDialogOpen(true)
   }, [])
 
   const handleEdit = useCallback(
@@ -213,33 +230,50 @@ export function PortionControls() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-3 border-t border-stone-200 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleView(recipe.id)}
-                      className="flex-1 h-9 sm:h-10 text-xs sm:text-sm touch-manipulation"
-                    >
-                      <EyeIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">View</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEdit(recipe.id)}
-                      className="flex-1 h-9 sm:h-10 text-xs sm:text-sm touch-manipulation"
-                    >
-                      <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Edit</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(recipe.id)}
-                      className="h-9 sm:h-10 w-9 sm:w-10 p-0 text-destructive hover:text-destructive touch-manipulation"
-                    >
-                      <TrashIcon className="w-3 h-3 sm:w-4 sm:h-4" />
-                    </Button>
+                  <div className="flex items-center justify-end pt-3 border-t border-stone-200 flex-shrink-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 sm:h-10 w-9 sm:w-10 p-0 touch-manipulation"
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleView(recipe.id)}
+                        >
+                          <EyeIcon className="mr-2 h-4 w-4" />
+                          View Recipe
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleViewItems(recipe.id)}
+                        >
+                          <List className="mr-2 h-4 w-4" />
+                          View Items
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleEdit(recipe.id)}
+                        >
+                          <PencilIcon className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDelete(recipe.id)}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <TrashIcon className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               )
@@ -279,6 +313,12 @@ export function PortionControls() {
           open={viewDialogOpen}
           onOpenChange={setViewDialogOpen}
           portionControlId={portionControlToView}
+        />
+
+        <PortionControlItemsDialog
+          open={itemsDialogOpen}
+          onOpenChange={setItemsDialogOpen}
+          portionControlId={portionControlToViewItems}
         />
 
         <ConfirmDialog
