@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MenuRouteImport } from './routes/menu'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportsIndexRouteImport } from './routes/reports/index'
 import { Route as QueueOrdersIndexRouteImport } from './routes/queue-orders/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
@@ -29,6 +30,11 @@ const MenuRoute = MenuRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsIndexRoute = ReportsIndexRouteImport.update({
+  id: '/reports/',
+  path: '/reports/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QueueOrdersIndexRoute = QueueOrdersIndexRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/orders': typeof OrdersIndexRoute
   '/pos': typeof PosIndexRoute
   '/queue-orders': typeof QueueOrdersIndexRoute
+  '/reports': typeof ReportsIndexRoute
   '/categories': typeof manageproductsCategoriesIndexRoute
   '/products': typeof manageproductsProductsIndexRoute
 }
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/orders': typeof OrdersIndexRoute
   '/pos': typeof PosIndexRoute
   '/queue-orders': typeof QueueOrdersIndexRoute
+  '/reports': typeof ReportsIndexRoute
   '/categories': typeof manageproductsCategoriesIndexRoute
   '/products': typeof manageproductsProductsIndexRoute
 }
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/orders/': typeof OrdersIndexRoute
   '/pos/': typeof PosIndexRoute
   '/queue-orders/': typeof QueueOrdersIndexRoute
+  '/reports/': typeof ReportsIndexRoute
   '/(manage products)/categories/': typeof manageproductsCategoriesIndexRoute
   '/(manage products)/products/': typeof manageproductsProductsIndexRoute
 }
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/pos'
     | '/queue-orders'
+    | '/reports'
     | '/categories'
     | '/products'
   fileRoutesByTo: FileRoutesByTo
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/pos'
     | '/queue-orders'
+    | '/reports'
     | '/categories'
     | '/products'
   id:
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/pos/'
     | '/queue-orders/'
+    | '/reports/'
     | '/(manage products)/categories/'
     | '/(manage products)/products/'
   fileRoutesById: FileRoutesById
@@ -171,6 +183,7 @@ export interface RootRouteChildren {
   OrdersIndexRoute: typeof OrdersIndexRoute
   PosIndexRoute: typeof PosIndexRoute
   QueueOrdersIndexRoute: typeof QueueOrdersIndexRoute
+  ReportsIndexRoute: typeof ReportsIndexRoute
   manageproductsCategoriesIndexRoute: typeof manageproductsCategoriesIndexRoute
   manageproductsProductsIndexRoute: typeof manageproductsProductsIndexRoute
 }
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports/': {
+      id: '/reports/'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/queue-orders/': {
@@ -267,6 +287,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrdersIndexRoute: OrdersIndexRoute,
   PosIndexRoute: PosIndexRoute,
   QueueOrdersIndexRoute: QueueOrdersIndexRoute,
+  ReportsIndexRoute: ReportsIndexRoute,
   manageproductsCategoriesIndexRoute: manageproductsCategoriesIndexRoute,
   manageproductsProductsIndexRoute: manageproductsProductsIndexRoute,
 }

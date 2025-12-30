@@ -7,6 +7,7 @@ import {
   Receipt,
   ScanLine,
   ShoppingCart,
+  BarChart3,
 } from 'lucide-react'
 import { useLocation } from '@tanstack/react-router'
 
@@ -52,6 +53,11 @@ const items = [
     title: 'Expenses',
     url: '/expenses',
     icon: Receipt,
+  },
+  {
+    title: 'Reports',
+    url: '/reports',
+    icon: BarChart3,
   },
   {
     title: 'Manage Products',
