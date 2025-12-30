@@ -112,9 +112,11 @@ export const OrdersTable = memo(function OrdersTable({
     [onDelete],
   )
 
-  // Calculate total sales from filtered data
+  // Calculate total sales from completed orders only
   const totalSales = useMemo(() => {
-    return data.reduce((sum, order) => sum + Number(order.total || 0), 0)
+    return data
+      .filter((order) => order.status === 'completed')
+      .reduce((sum, order) => sum + Number(order.total || 0), 0)
   }, [data])
 
   // Format number in accounting format (comma-separated thousands)
@@ -203,9 +205,14 @@ export const OrdersTable = memo(function OrdersTable({
       cell: ({ row }) => {
         const orderType = row.getValue('order_type') as string | null
         if (!orderType) return <div className="text-muted-foreground">-</div>
+        const orderTypeLabels: Record<string, string> = {
+          pickup: 'Pickup',
+          delivery: 'Delivery',
+          dine_in: 'Dine In',
+        }
         return (
           <Badge variant="outline" className="capitalize">
-            {orderType === 'pickup' ? 'Pickup' : 'Delivery'}
+            {orderTypeLabels[orderType] || orderType}
           </Badge>
         )
       },
@@ -315,7 +322,9 @@ export const OrdersTable = memo(function OrdersTable({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-stone-600 mb-1">Total Orders</h3>
-              <p className="text-3xl font-bold text-stone-900">{data.length.toLocaleString('en-US')}</p>
+              <p className="text-3xl font-bold text-stone-900">
+                {data.filter((order) => order.status === 'completed').length.toLocaleString('en-US')}
+              </p>
             </div>
           </div>
         </div>

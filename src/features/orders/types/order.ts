@@ -16,7 +16,7 @@ export type PaymentMethod = 'cash' | 'gcash'
 /**
  * Order type
  */
-export type OrderType = 'pickup' | 'delivery'
+export type OrderType = 'pickup' | 'delivery' | 'dine_in'
 
 /**
  * Order entity type definition

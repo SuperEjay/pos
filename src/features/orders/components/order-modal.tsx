@@ -1,5 +1,5 @@
 import { memo, useEffect, useState, useMemo, useCallback } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon } from 'lucide-react'
 import { useAddOrder, useGetOrder, useUpdateOrder } from '../hooks'
@@ -26,7 +26,101 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+interface ProductComboboxProps {
+  value: string
+  onValueChange: (value: string) => void
+  products: Array<{ id: string; name: string }>
+  disabled?: boolean
+  itemIndex: number
+}
+
+function ProductCombobox({
+  value,
+  onValueChange,
+  products,
+  disabled,
+  itemIndex,
+}: ProductComboboxProps) {
+  const [open, setOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const selectedProduct = products.find((p) => p.id === value)
+
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery) return products
+    return products.filter((product) =>
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+  }, [products, searchQuery])
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between bg-white border-stone-300 hover:bg-stone-50"
+        >
+          <span className="truncate">
+            {selectedProduct ? selectedProduct.name : 'Select product...'}
+          </span>
+          <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search products..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
+          <CommandList>
+            <CommandEmpty>No products found.</CommandEmpty>
+            <CommandGroup>
+              {filteredProducts.map((product) => (
+                <CommandItem
+                  key={product.id}
+                  value={product.name}
+                  onSelect={() => {
+                    onValueChange(product.id)
+                    setOpen(false)
+                    setSearchQuery('')
+                  }}
+                >
+                  <CheckIcon
+                    className={cn(
+                      'mr-2 h-4 w-4',
+                      value === product.id ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  {product.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 interface OrderModalProps {
   open: boolean
@@ -75,14 +169,14 @@ export const OrderModal = memo(function OrderModal({
     name: 'items',
   })
 
-  // Calculate total
-  const watchedItems = watch('items')
-  const watchedOrderType = watch('order_type')
-  const watchedDeliveryFee = watch('delivery_fee')
+  // Calculate total - use useWatch for better reactivity
+  const watchedItems = useWatch({ control, name: 'items' }) || []
+  const watchedOrderType = useWatch({ control, name: 'order_type' })
+  const watchedDeliveryFee = useWatch({ control, name: 'delivery_fee' })
   const itemsTotal = useMemo(
     () =>
       watchedItems.reduce(
-        (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+        (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
         0,
       ),
     [watchedItems],
@@ -90,7 +184,7 @@ export const OrderModal = memo(function OrderModal({
   const deliveryFee = useMemo(
     () =>
       watchedOrderType === 'delivery' && watchedDeliveryFee
-        ? watchedDeliveryFee
+        ? Number(watchedDeliveryFee)
         : 0,
     [watchedOrderType, watchedDeliveryFee],
   )
@@ -352,8 +446,8 @@ export const OrderModal = memo(function OrderModal({
                 <Select
                   value={watch('order_type') || 'pickup'}
                   onValueChange={(value) => {
-                    setValue('order_type', value as 'pickup' | 'delivery')
-                    if (value === 'pickup') {
+                    setValue('order_type', value as 'pickup' | 'delivery' | 'dine_in')
+                    if (value === 'pickup' || value === 'dine_in') {
                       setValue('delivery_fee', null)
                     }
                   }}
@@ -367,6 +461,7 @@ export const OrderModal = memo(function OrderModal({
                   <SelectContent>
                     <SelectItem value="pickup">Pickup</SelectItem>
                     <SelectItem value="delivery">Delivery</SelectItem>
+                    <SelectItem value="dine_in">Dine In</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -460,24 +555,15 @@ export const OrderModal = memo(function OrderModal({
                       <Label>
                         Product <span className="text-destructive">*</span>
                       </Label>
-                      <Select
+                      <ProductCombobox
                         value={watch(`items.${itemIndex}.product_id`)}
                         onValueChange={async (value) => {
                           await handleProductChange(itemIndex, value, null)
                         }}
+                        products={products || []}
                         disabled={isSubmitting}
-                      >
-                        <SelectTrigger className="bg-white border-stone-300 w-full">
-                          <SelectValue placeholder="Select product" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products?.map((product: any) => (
-                            <SelectItem key={product.id} value={product.id}>
-                              {product.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        itemIndex={itemIndex}
+                      />
                       {errors.items?.[itemIndex]?.product_id && (
                         <p className="text-sm text-destructive">
                           {errors.items[itemIndex].product_id.message}
@@ -596,8 +682,8 @@ export const OrderModal = memo(function OrderModal({
                   <div className="text-sm text-muted-foreground">
                     Subtotal: ₱
                     {(
-                      (watch(`items.${itemIndex}.quantity`) || 0) *
-                      (watch(`items.${itemIndex}.price`) || 0)
+                      (Number(watch(`items.${itemIndex}.quantity`)) || 0) *
+                      (Number(watch(`items.${itemIndex}.price`)) || 0)
                     ).toFixed(2)}
                   </div>
                 </div>

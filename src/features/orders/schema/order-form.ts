@@ -34,7 +34,7 @@ export const orderFormSchema = z.object({
     },
   ),
   order_date: z.string().min(1, 'Order date is required'),
-  order_type: z.enum(['pickup', 'delivery']).nullable().optional(),
+  order_type: z.enum(['pickup', 'delivery', 'dine_in']).nullable().optional(),
   delivery_fee: z
     .number()
     .nonnegative('Delivery fee must be non-negative')

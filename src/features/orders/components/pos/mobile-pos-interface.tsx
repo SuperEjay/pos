@@ -483,7 +483,7 @@ export function MobilePOSInterface({
                 value={orderType || 'pickup'}
                 onValueChange={(value) => {
                   onOrderTypeChange(value as OrderType)
-                  if (value === 'pickup') {
+                  if (value === 'pickup' || value === 'dine_in') {
                     onDeliveryFeeChange(0)
                   }
                 }}
@@ -497,6 +497,7 @@ export function MobilePOSInterface({
                 <SelectContent>
                   <SelectItem value="pickup">Pickup</SelectItem>
                   <SelectItem value="delivery">Delivery</SelectItem>
+                  <SelectItem value="dine_in">Dine In</SelectItem>
                 </SelectContent>
               </Select>
             </div>
