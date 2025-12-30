@@ -47,7 +47,6 @@ interface ProductComboboxProps {
   onValueChange: (value: string) => void
   products: Array<{ id: string; name: string }>
   disabled?: boolean
-  itemIndex: number
 }
 
 function ProductCombobox({
@@ -55,7 +54,6 @@ function ProductCombobox({
   onValueChange,
   products,
   disabled,
-  itemIndex,
 }: ProductComboboxProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -176,7 +174,8 @@ export const OrderModal = memo(function OrderModal({
   const itemsTotal = useMemo(
     () =>
       watchedItems.reduce(
-        (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+        (sum, item) =>
+          sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
         0,
       ),
     [watchedItems],
@@ -284,7 +283,8 @@ export const OrderModal = memo(function OrderModal({
   // Fetch product with variants when selected
   const fetchProductVariants = useCallback(
     async (productId: string) => {
-      if (productsWithVariants[productId]) return productsWithVariants[productId]
+      if (productsWithVariants[productId])
+        return productsWithVariants[productId]
 
       try {
         const productData = await getProduct(productId)
@@ -311,37 +311,33 @@ export const OrderModal = memo(function OrderModal({
   )
 
   const handleProductChange = useCallback(
-    async (
-      itemIndex: number,
-      productId: string,
-      variantId: string | null,
-    ) => {
-    if (!productId || !products) return
+    async (itemIndex: number, productId: string, variantId: string | null) => {
+      if (!productId || !products) return
 
-    const product = products.find((p: any) => p.id === productId)
-    if (!product) return
+      const product = products.find((p: any) => p.id === productId)
+      if (!product) return
 
-    // Fetch product variants
-    await fetchProductVariants(productId)
+      // Fetch product variants
+      await fetchProductVariants(productId)
 
-    // Set product price if no variant is selected
-    if (!variantId && product.price) {
-      setValue(`items.${itemIndex}.price`, product.price)
-    }
-
-    setValue(`items.${itemIndex}.product_id`, productId)
-    if (variantId) {
-      setValue(`items.${itemIndex}.variant_id`, variantId)
-      // Set variant price if available
-      const variants = getProductVariants(productId)
-      const variant = variants.find((v: any) => v.id === variantId)
-      if (variant?.price) {
-        setValue(`items.${itemIndex}.price`, variant.price)
+      // Set product price if no variant is selected
+      if (!variantId && product.price) {
+        setValue(`items.${itemIndex}.price`, product.price)
       }
-    } else {
-      setValue(`items.${itemIndex}.variant_id`, null)
-    }
-  },
+
+      setValue(`items.${itemIndex}.product_id`, productId)
+      if (variantId) {
+        setValue(`items.${itemIndex}.variant_id`, variantId)
+        // Set variant price if available
+        const variants = getProductVariants(productId)
+        const variant = variants.find((v: any) => v.id === variantId)
+        if (variant?.price) {
+          setValue(`items.${itemIndex}.price`, variant.price)
+        }
+      } else {
+        setValue(`items.${itemIndex}.variant_id`, null)
+      }
+    },
     [products, fetchProductVariants, getProductVariants, setValue],
   )
 
@@ -446,16 +442,17 @@ export const OrderModal = memo(function OrderModal({
                 <Select
                   value={watch('order_type') || 'pickup'}
                   onValueChange={(value) => {
-                    setValue('order_type', value as 'pickup' | 'delivery' | 'dine_in')
+                    setValue(
+                      'order_type',
+                      value as 'pickup' | 'delivery' | 'dine_in',
+                    )
                     if (value === 'pickup' || value === 'dine_in') {
                       setValue('delivery_fee', null)
                     }
                   }}
                   disabled={isSubmitting}
                 >
-                  <SelectTrigger
-                    className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full"
-                  >
+                  <SelectTrigger className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full">
                     <SelectValue placeholder="Select order type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -493,13 +490,14 @@ export const OrderModal = memo(function OrderModal({
               <Select
                 value={watch('payment_method') || 'none'}
                 onValueChange={(value) => {
-                  setValue('payment_method', value === 'none' ? null : (value as 'cash' | 'gcash'))
+                  setValue(
+                    'payment_method',
+                    value === 'none' ? null : (value as 'cash' | 'gcash'),
+                  )
                 }}
                 disabled={isSubmitting}
               >
-                <SelectTrigger
-                  className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full"
-                >
+                <SelectTrigger className="bg-white border-stone-300 focus-visible:border-stone-400 focus-visible:ring-stone-200 w-full">
                   <SelectValue placeholder="Select payment method" />
                 </SelectTrigger>
                 <SelectContent>
@@ -562,7 +560,6 @@ export const OrderModal = memo(function OrderModal({
                         }}
                         products={products || []}
                         disabled={isSubmitting}
-                        itemIndex={itemIndex}
                       />
                       {errors.items?.[itemIndex]?.product_id && (
                         <p className="text-sm text-destructive">
@@ -701,12 +698,16 @@ export const OrderModal = memo(function OrderModal({
                 <span className="text-stone-600">Subtotal:</span>
                 <span className="font-medium">₱{itemsTotal.toFixed(2)}</span>
               </div>
-              {watchedOrderType === 'delivery' && watchedDeliveryFee && watchedDeliveryFee > 0 && (
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-stone-600">Delivery Fee:</span>
-                  <span className="font-medium">₱{deliveryFee.toFixed(2)}</span>
-                </div>
-              )}
+              {watchedOrderType === 'delivery' &&
+                watchedDeliveryFee &&
+                watchedDeliveryFee > 0 && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-stone-600">Delivery Fee:</span>
+                    <span className="font-medium">
+                      ₱{deliveryFee.toFixed(2)}
+                    </span>
+                  </div>
+                )}
               <div className="flex justify-between items-center border-t pt-2">
                 <span className="text-lg font-semibold">Total:</span>
                 <span className="text-lg font-bold">₱{total.toFixed(2)}</span>
