@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   ChevronRight,
   Clock,
@@ -97,7 +98,7 @@ export default function SideBar({
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <>
+                <React.Fragment key={item.title}>
                   {item.items && (
                     <Collapsible
                       defaultOpen={item.items.some((subItem) =>
@@ -158,7 +159,7 @@ export default function SideBar({
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
-                </>
+                </React.Fragment>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

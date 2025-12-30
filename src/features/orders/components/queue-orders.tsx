@@ -285,13 +285,36 @@ const OrderCard = memo(
             <div className="text-xs sm:text-sm">
               <div className="font-medium mb-1">Items:</div>
               <div className="space-y-1">
-                {displayedItems.map((item: any, idx: number) => (
-                  <div key={idx} className="text-muted-foreground">
-                    • {item.product_name || 'Unknown Product'}
-                    {item.variant_name && ` (${item.variant_name})`} x{' '}
-                    {item.quantity}
-                  </div>
-                ))}
+                {displayedItems.map((item: any, idx: number) => {
+                  const addOns = item.add_ons || []
+                  return (
+                    <div key={idx} className="text-muted-foreground">
+                      <div>
+                        • {item.product_name || 'Unknown Product'}
+                        {item.variant_name && ` (${item.variant_name})`} x{' '}
+                        {item.quantity}
+                      </div>
+                      {addOns.length > 0 && (
+                        <div className="ml-4 mt-0.5 space-y-0.5 text-xs">
+                          {addOns.slice(0, 2).map((addOn: any, addOnIdx: number) => {
+                            const addOnQuantity = addOn.quantity || 1
+                            return (
+                              <div key={addOnIdx} className="text-stone-500">
+                                - {addOn.name}: {addOn.value}
+                                {addOnQuantity > 1 && ` ×${addOnQuantity}`}
+                              </div>
+                            )
+                          })}
+                          {addOns.length > 2 && (
+                            <div className="text-stone-400">
+                              +{addOns.length - 2} more add-on(s)
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
                 {remainingItemsCount > 0 && (
                   <div className="text-muted-foreground">
                     +{remainingItemsCount} more item(s)

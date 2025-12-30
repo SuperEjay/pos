@@ -1,7 +1,7 @@
 import { memo, useEffect, useState, useMemo, useCallback } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { PlusIcon, TrashIcon } from 'lucide-react'
+import { PlusIcon, TrashIcon, ChevronDown, ChevronUp, Plus, Minus } from 'lucide-react'
 import { useAddOrder, useGetOrder, useUpdateOrder } from '../hooks'
 import { orderFormSchema } from '../schema/order-form'
 import type { OrderFormValues } from '../schema/order-form'
@@ -41,6 +41,10 @@ import {
 } from '@/components/ui/command'
 import { CheckIcon, ChevronDownIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { useGetCategories } from '@/features/categories/hooks'
 
 interface ProductComboboxProps {
   value: string
@@ -120,6 +124,385 @@ function ProductCombobox({
   )
 }
 
+interface OrderItemSubtotalProps {
+  itemIndex: number
+  control: any
+}
+
+function OrderItemSubtotal({ itemIndex, control }: OrderItemSubtotalProps) {
+  // Use useWatch for reactive updates
+  const quantity = useWatch({ control, name: `items.${itemIndex}.quantity` as const }) || 0
+  const price = useWatch({ control, name: `items.${itemIndex}.price` as const }) || 0
+  const addOns = (useWatch({ control, name: `items.${itemIndex}.add_ons` as any }) as any[]) || []
+
+  const baseSubtotal = Number(quantity) * Number(price)
+  const addOnsTotal = addOns.reduce((sum, addOn) => {
+    return sum + (addOn.price || 0) * (addOn.quantity || 1) * Number(quantity)
+  }, 0)
+  const subtotal = baseSubtotal + addOnsTotal
+
+  return (
+    <div className="text-sm text-muted-foreground">
+      Subtotal: ₱{subtotal.toFixed(2)}
+    </div>
+  )
+}
+
+interface OrderItemAddOnsWrapperProps {
+  itemIndex: number
+  control: any
+  setValue: any
+  productsWithVariants: Record<string, any>
+  addOnsProducts: Array<{ id: string; name: string; price: number | null }>
+  disabled?: boolean
+}
+
+function OrderItemAddOnsWrapper({
+  itemIndex,
+  control,
+  setValue,
+  productsWithVariants,
+  addOnsProducts,
+  disabled,
+}: OrderItemAddOnsWrapperProps) {
+  // Use useWatch at the top level of the component (not in a loop)
+  const watchedVariantId = useWatch({ control, name: `items.${itemIndex}.variant_id` as any })
+  const variantId = (watchedVariantId as unknown as string | null | undefined) || null
+  
+  return (
+    <OrderItemAddOns
+      itemIndex={itemIndex}
+      control={control}
+      setValue={setValue}
+      variantId={variantId}
+      productsWithVariants={productsWithVariants}
+      addOnsProducts={addOnsProducts}
+      disabled={disabled}
+    />
+  )
+}
+
+interface OrderItemAddOnsProps {
+  itemIndex: number
+  control: any
+  setValue: any
+  variantId: string | null | undefined
+  productsWithVariants: Record<string, any>
+  addOnsProducts: Array<{ id: string; name: string; price: number | null }>
+  disabled?: boolean
+}
+
+function OrderItemAddOns({
+  itemIndex,
+  control,
+  setValue,
+  variantId,
+  productsWithVariants,
+  addOnsProducts,
+  disabled,
+}: OrderItemAddOnsProps) {
+  const [expanded, setExpanded] = useState(false)
+  // Use useWatch for reactive updates
+  const watchedAddOns = useWatch({ control, name: `items.${itemIndex}.add_ons` as any })
+  const addOns = (watchedAddOns as any[]) || []
+  
+  // Get variant add-ons
+  const variantAddOns = useMemo(() => {
+    if (!variantId) return []
+    const variant = Object.values(productsWithVariants)
+      .flatMap((p: any) => p.variants || [])
+      .find((v: any) => v.id === variantId)
+    return variant?.options || []
+  }, [variantId, productsWithVariants])
+
+  const hasAddOns = variantAddOns.length > 0 || addOnsProducts.length > 0
+
+  const handleAddOnToggle = (addOn: { name: string; value: string }, checked: boolean) => {
+    const currentAddOns = [...addOns]
+    const existingIndex = currentAddOns.findIndex(
+      (a) => a.name === addOn.name && a.value === addOn.value
+    )
+
+    if (checked) {
+      // Add or keep the add-on
+      if (existingIndex >= 0) {
+        // Already exists, keep it (don't change quantity if it's already there)
+        return
+      } else {
+        // Add new add-on
+        currentAddOns.push({ ...addOn, quantity: 1, price: 0 })
+      }
+    } else {
+      // Remove the add-on when unchecked
+      if (existingIndex >= 0) {
+        currentAddOns.splice(existingIndex, 1)
+      }
+    }
+
+    setValue(`items.${itemIndex}.add_ons`, currentAddOns, { shouldValidate: true })
+  }
+
+  const handleAddOnProductToggle = (product: { id: string; name: string; price: number | null }, checked: boolean) => {
+    const currentAddOns = [...addOns]
+    const existingIndex = currentAddOns.findIndex(
+      (a) => a.name === 'Add-on' && a.value === product.name
+    )
+
+    if (checked) {
+      // Add or keep the add-on product
+      if (existingIndex >= 0) {
+        // Already exists, keep it (don't change quantity if it's already there)
+        return
+      } else {
+        // Add new add-on product
+        currentAddOns.push({
+          name: 'Add-on',
+          value: product.name,
+          quantity: 1,
+          price: product.price || 0,
+        })
+      }
+    } else {
+      // Remove the add-on product when unchecked
+      if (existingIndex >= 0) {
+        currentAddOns.splice(existingIndex, 1)
+      }
+    }
+
+    setValue(`items.${itemIndex}.add_ons`, currentAddOns, { shouldValidate: true })
+  }
+
+  const handleAddOnQuantityChange = (
+    addOnName: string,
+    addOnValue: string,
+    delta: number
+  ) => {
+    const currentAddOns = [...addOns]
+    const addOnIndex = currentAddOns.findIndex(
+      (a) => a.name === addOnName && a.value === addOnValue
+    )
+
+    if (addOnIndex >= 0) {
+      const currentQuantity = currentAddOns[addOnIndex].quantity || 1
+      const newQuantity = Math.max(0, currentQuantity + delta)
+
+      if (newQuantity === 0) {
+        currentAddOns.splice(addOnIndex, 1)
+      } else {
+        currentAddOns[addOnIndex] = {
+          ...currentAddOns[addOnIndex],
+          quantity: newQuantity,
+        }
+      }
+
+      setValue(`items.${itemIndex}.add_ons`, currentAddOns, { shouldValidate: true })
+    }
+  }
+
+  if (!hasAddOns) return null
+
+  return (
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <div className="border-t border-stone-200 pt-3 mt-3">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            className="w-full flex items-center justify-between text-sm text-stone-700 hover:text-stone-900 transition-colors py-1.5 px-1 rounded hover:bg-stone-100 disabled:opacity-50"
+          >
+            <span className="font-semibold">
+              Customize with Add-ons {addOns.length > 0 && (
+                <span className="text-stone-600 font-normal">
+                  ({addOns.reduce((sum, a) => sum + (a.quantity || 1), 0)} items)
+                </span>
+              )}
+            </span>
+            {expanded ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3 space-y-4 pl-3 border-l-2 border-stone-300">
+          {/* Variant Options */}
+          {variantAddOns.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="text-sm font-semibold text-stone-800 mb-1.5">
+                Options
+              </div>
+              {variantAddOns.map((addOn: any, addOnIndex: number) => {
+                const selectedAddOn = addOns.find(
+                  (a) => a.name === addOn.name && a.value === addOn.value
+                )
+                const isSelected = !!selectedAddOn
+                const quantity = selectedAddOn?.quantity || 0
+                return (
+                  <div
+                    key={`variant-${addOnIndex}`}
+                    className="flex items-center gap-2.5 p-1.5 rounded hover:bg-stone-50 transition-colors"
+                  >
+                    <Checkbox
+                      id={`addon-${itemIndex}-variant-${addOnIndex}`}
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleAddOnToggle(addOn, checked === true)}
+                      disabled={disabled}
+                      className="h-4 w-4"
+                    />
+                    <label
+                      htmlFor={`addon-${itemIndex}-variant-${addOnIndex}`}
+                      className="text-sm text-stone-700 cursor-pointer flex-1"
+                    >
+                      <span className="font-medium">{addOn.name}:</span>{' '}
+                      <span className="text-stone-600">{addOn.value}</span>
+                    </label>
+                    {isSelected && (
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddOnQuantityChange(addOn.name, addOn.value, -1)}
+                          disabled={disabled}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                        <span className="text-sm font-semibold w-6 text-center">
+                          {quantity}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddOnQuantityChange(addOn.name, addOn.value, 1)}
+                          disabled={disabled}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {/* Add-on Products */}
+          {addOnsProducts.length > 0 && (
+            <div className="space-y-2.5">
+              {variantAddOns.length > 0 && (
+                <div className="text-sm font-semibold text-stone-800 mb-1.5 pt-2 border-t border-stone-200">
+                  Additional Add-ons
+                </div>
+              )}
+              {!variantAddOns.length && (
+                <div className="text-sm font-semibold text-stone-800 mb-1.5">
+                  Available Add-ons
+                </div>
+              )}
+              {addOnsProducts.map((product) => {
+                const selectedAddOn = addOns.find(
+                  (a) => a.name === 'Add-on' && a.value === product.name
+                )
+                const isSelected = !!selectedAddOn
+                const quantity = selectedAddOn?.quantity || 0
+                const addOnPrice = product.price || 0
+                return (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between gap-2.5 p-1.5 rounded hover:bg-stone-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 flex-1">
+                      <Checkbox
+                        id={`addon-${itemIndex}-product-${product.id}`}
+                        checked={isSelected}
+                        onCheckedChange={(checked) => handleAddOnProductToggle(product, checked === true)}
+                        disabled={disabled}
+                        className="h-4 w-4"
+                      />
+                      <label
+                        htmlFor={`addon-${itemIndex}-product-${product.id}`}
+                        className="text-sm text-stone-700 cursor-pointer flex-1"
+                      >
+                        <span className="font-medium">{product.name}</span>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {addOnPrice > 0 && (
+                        <span className="text-sm font-semibold text-stone-900 whitespace-nowrap">
+                          +₱{addOnPrice.toFixed(2)}
+                        </span>
+                      )}
+                      {isSelected && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddOnQuantityChange('Add-on', product.name, -1)}
+                            disabled={disabled}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="text-sm font-semibold w-6 text-center">
+                            {quantity}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddOnQuantityChange('Add-on', product.name, 1)}
+                            disabled={disabled}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+          {/* Selected Add-ons Display */}
+          {addOns.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <div className="text-xs font-medium text-stone-600 mb-1">
+                Selected:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {addOns.map((addOn, addOnIndex) => {
+                  const addOnQuantity = addOn.quantity || 1
+                  return (
+                    <Badge
+                      key={addOnIndex}
+                      variant="secondary"
+                      className="text-xs bg-stone-200 text-stone-700 px-2 py-0.5"
+                    >
+                      {addOn.name}: {addOn.value}
+                      {addOnQuantity > 1 && (
+                        <span className="ml-1 font-semibold">×{addOnQuantity}</span>
+                      )}
+                      {addOn.price !== undefined && addOn.price > 0 && (
+                        <span className="ml-1 font-semibold">
+                          +₱{(addOn.price * addOnQuantity).toFixed(2)}
+                        </span>
+                      )}
+                    </Badge>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </CollapsibleContent>
+      </div>
+    </Collapsible>
+  )
+}
+
 interface OrderModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -133,9 +516,18 @@ export const OrderModal = memo(function OrderModal({
 }: OrderModalProps) {
   const isEditing = Boolean(order)
   const { data: products } = useGetProducts()
+  const { data: categories } = useGetCategories()
   const { data: orderWithItems, isLoading: isLoadingOrder } = useGetOrder(
     order?.id || null,
   )
+
+  // Get add-ons category products
+  const addOnsProducts = useMemo(() => {
+    if (!categories || !products) return []
+    const addOnsCategory = categories.find((cat) => cat.name.toLowerCase() === 'add-ons')
+    if (!addOnsCategory) return []
+    return products.filter((p) => p.category_id === addOnsCategory.id && p.is_active)
+  }, [categories, products])
 
   const {
     register,
@@ -171,15 +563,16 @@ export const OrderModal = memo(function OrderModal({
   const watchedItems = useWatch({ control, name: 'items' }) || []
   const watchedOrderType = useWatch({ control, name: 'order_type' })
   const watchedDeliveryFee = useWatch({ control, name: 'delivery_fee' })
-  const itemsTotal = useMemo(
-    () =>
-      watchedItems.reduce(
-        (sum, item) =>
-          sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
-        0,
-      ),
-    [watchedItems],
-  )
+  const itemsTotal = useMemo(() => {
+    return watchedItems.reduce((sum, item) => {
+      const baseSubtotal = (Number(item.price) || 0) * (Number(item.quantity) || 0)
+      const addOnsTotal = ((item.add_ons as any[]) || []).reduce((addOnSum, addOn) => {
+        const addOnQuantity = addOn.quantity || 1
+        return addOnSum + (addOn.price || 0) * addOnQuantity * (Number(item.quantity) || 0)
+      }, 0)
+      return sum + baseSubtotal + addOnsTotal
+    }, 0)
+  }, [watchedItems])
   const deliveryFee = useMemo(
     () =>
       watchedOrderType === 'delivery' && watchedDeliveryFee
@@ -201,6 +594,12 @@ export const OrderModal = memo(function OrderModal({
           variant_id: item.variant_id || null,
           quantity: item.quantity,
           price: item.price,
+          add_ons: (item.add_ons || []).map((addOn: any) => ({
+            name: addOn.name,
+            value: addOn.value,
+            price: addOn.price || 0,
+            quantity: addOn.quantity || 1,
+          })),
         }))
 
         reset({
@@ -211,6 +610,14 @@ export const OrderModal = memo(function OrderModal({
           delivery_fee: order.delivery_fee || null,
           payment_method: order.payment_method || null,
           items: items,
+        })
+
+        // Fetch product variants for all items to display variant add-ons (after reset)
+        // This is done asynchronously and doesn't block the form reset
+        items.forEach((item: any) => {
+          if (item.product_id) {
+            fetchProductVariants(item.product_id).catch(console.error)
+          }
         })
       } else if (!order) {
         reset({
@@ -677,13 +1084,20 @@ export const OrderModal = memo(function OrderModal({
                     </div>
                   </div>
 
-                  <div className="text-sm text-muted-foreground">
-                    Subtotal: ₱
-                    {(
-                      (Number(watch(`items.${itemIndex}.quantity`)) || 0) *
-                      (Number(watch(`items.${itemIndex}.price`)) || 0)
-                    ).toFixed(2)}
-                  </div>
+                  {/* Add-ons Section */}
+                  <OrderItemAddOnsWrapper
+                    itemIndex={itemIndex}
+                    control={control}
+                    setValue={setValue}
+                    productsWithVariants={productsWithVariants}
+                    addOnsProducts={addOnsProducts}
+                    disabled={isSubmitting}
+                  />
+
+                  <OrderItemSubtotal
+                    itemIndex={itemIndex}
+                    control={control}
+                  />
                 </div>
               ))}
 

@@ -336,8 +336,32 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
 }
 
 export const deleteOrder = async (id: string) => {
-  // Delete order items first (cascade should handle this, but being explicit)
-  await supabase.from('order_items').delete().eq('order_id', id)
+  // First, get all order items for this order
+  const { data: orderItems, error: itemsError } = await supabase
+    .from('order_items')
+    .select('id')
+    .eq('order_id', id)
+
+  if (itemsError) throw itemsError
+
+  // Delete order item add-ons explicitly (even though CASCADE should handle it)
+  if (orderItems && orderItems.length > 0) {
+    const orderItemIds = orderItems.map((item) => item.id)
+    const { error: addOnsError } = await supabase
+      .from('order_item_add_ons')
+      .delete()
+      .in('order_item_id', orderItemIds)
+
+    if (addOnsError) throw addOnsError
+  }
+
+  // Delete order items (CASCADE will also delete add-ons, but we're being explicit above)
+  const { error: itemsDeleteError } = await supabase
+    .from('order_items')
+    .delete()
+    .eq('order_id', id)
+
+  if (itemsDeleteError) throw itemsDeleteError
 
   // Delete order
   const { error } = await supabase.from('orders').delete().eq('id', id)
