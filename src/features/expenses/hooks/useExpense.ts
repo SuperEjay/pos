@@ -18,8 +18,8 @@ export const useAddExpense = () => {
       toast.success('Expense added successfully')
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
     },
-    onError: () => {
-      toast.error('Failed to add expense')
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to add expense')
     },
   })
 }
@@ -32,8 +32,8 @@ export const useUpdateExpense = () => {
       toast.success('Expense updated successfully')
       queryClient.invalidateQueries({ queryKey: ['expenses'] })
     },
-    onError: () => {
-      toast.error('Failed to update expense')
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to update expense')
     },
   })
 }

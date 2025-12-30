@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useMemo } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { PlusIcon, TrashIcon, ArrowLeft } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
@@ -29,21 +29,20 @@ interface ExpenseFormProps {
 export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
   const navigate = useNavigate()
   const isEditing = Boolean(expenseProp)
-  const { data: fetchedExpense, isLoading: isLoadingExpense } =
-    useGetExpense(expenseProp?.id || null)
-  
+  const { data: fetchedExpense, isLoading: isLoadingExpense } = useGetExpense(
+    expenseProp?.id || null,
+  )
+
   // Use passed expense if available, otherwise use fetched expense
   const expense = expenseProp || fetchedExpense || null
-  const expenseWithItems = expenseProp && 'items' in expenseProp 
-    ? expenseProp 
-    : fetchedExpense || null
+  const expenseWithItems =
+    expenseProp && 'items' in expenseProp ? expenseProp : fetchedExpense || null
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-    watch,
     control,
   } = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
@@ -68,11 +67,10 @@ export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
     if (expense && expenseWithItems && !isLoadingExpense) {
       reset({
         transaction_date: expense.transaction_date.split('T')[0],
-        items:
-          expenseWithItems.items?.map((item) => ({
-            item_name: item.item_name,
-            cost: item.cost,
-          })) || [{ item_name: '', cost: 0 }],
+        items: expenseWithItems.items?.map((item) => ({
+          item_name: item.item_name,
+          cost: item.cost,
+        })) || [{ item_name: '', cost: 0 }],
         remarks: expense.remarks || null,
       })
     } else if (!expense) {
@@ -88,13 +86,20 @@ export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
   const { mutate: updateExpense, isPending: isUpdating } = useUpdateExpense()
   const isPending = isAdding || isUpdating
 
-  // Watch items to calculate total
-  const watchedItems = watch('items')
+  // Watch items to calculate total in real-time using useWatch for reactive updates
+  const watchedItems = useWatch({
+    control,
+    name: 'items',
+    defaultValue: [],
+  })
+
+  // Calculate grand total - useWatch will automatically trigger recalculation when items change
   const grandTotal = useMemo(() => {
-    return watchedItems.reduce(
-      (sum, item) => sum + (item.cost || 0),
-      0,
-    )
+    if (!watchedItems || watchedItems.length === 0) return 0
+    return watchedItems.reduce((sum, item) => {
+      const cost = Number(item?.cost) || 0
+      return sum + cost
+    }, 0)
   }, [watchedItems])
 
   const onSubmit = (data: ExpenseFormValues) => {
@@ -231,9 +236,7 @@ export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
                     <TableRow key={item.id}>
                       <TableCell>
                         <Input
-                          {...register(
-                            `items.${itemIndex}.item_name` as const,
-                          )}
+                          {...register(`items.${itemIndex}.item_name` as const)}
                           placeholder="Enter item name"
                           disabled={isSubmitting}
                           className={cn(
@@ -249,21 +252,71 @@ export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          {...register(
-                            `items.${itemIndex}.cost` as const,
-                            { valueAsNumber: true },
-                          )}
-                          placeholder="0.00"
-                          disabled={isSubmitting}
-                          className={cn(
-                            'bg-white border-stone-300',
-                            errors.items?.[itemIndex]?.cost &&
-                              'border-destructive',
-                          )}
+                        <Controller
+                          name={`items.${itemIndex}.cost` as const}
+                          control={control}
+                          rules={{
+                            required: 'Cost is required',
+                            min: {
+                              value: 0.01,
+                              message: 'Cost must be at least 0.01',
+                            },
+                          }}
+                          render={({ field }) => {
+                            const handleChange = (
+                              e: React.ChangeEvent<HTMLInputElement>,
+                            ) => {
+                              const value =
+                                e.target.value === ''
+                                  ? 0
+                                  : Number(e.target.value)
+                              field.onChange(value)
+                            }
+
+                            const handleKeyUp = (
+                              e: React.KeyboardEvent<HTMLInputElement>,
+                            ) => {
+                              const value =
+                                e.currentTarget.value === ''
+                                  ? 0
+                                  : Number(e.currentTarget.value)
+                              if (Number(value) !== Number(field.value)) {
+                                field.onChange(value)
+                              }
+                            }
+
+                            const handleBlur = (
+                              e: React.FocusEvent<HTMLInputElement>,
+                            ) => {
+                              field.onBlur()
+                              const value =
+                                e.target.value === ''
+                                  ? 0
+                                  : Number(e.target.value)
+                              if (value !== field.value) {
+                                field.onChange(value)
+                              }
+                            }
+
+                            return (
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0.01"
+                                value={field.value || ''}
+                                placeholder="0.00"
+                                disabled={isSubmitting}
+                                onChange={handleChange}
+                                onKeyUp={handleKeyUp}
+                                onBlur={handleBlur}
+                                className={cn(
+                                  'bg-white border-stone-300',
+                                  errors.items?.[itemIndex]?.cost &&
+                                    'border-destructive',
+                                )}
+                              />
+                            )
+                          }}
                         />
                         {errors.items?.[itemIndex]?.cost && (
                           <p className="text-xs text-destructive mt-1">
@@ -301,9 +354,7 @@ export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
               </Table>
             </div>
             {errors.items && (
-              <p className="text-sm text-destructive">
-                {errors.items.message}
-              </p>
+              <p className="text-sm text-destructive">{errors.items.message}</p>
             )}
           </div>
 
@@ -354,4 +405,3 @@ export function ExpenseForm({ expense: expenseProp }: ExpenseFormProps) {
     </div>
   )
 }
-

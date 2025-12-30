@@ -1,19 +1,6 @@
 import type { ExpenseFormValues } from '../schema/expense-form'
 import type { ExpenseWithItems } from '../types'
-
-const STORAGE_KEY = 'expenses_data'
-
-// Helper functions for localStorage
-const getExpensesFromStorage = (): Array<ExpenseWithItems> => {
-  if (typeof window === 'undefined') return []
-  const stored = localStorage.getItem(STORAGE_KEY)
-  return stored ? JSON.parse(stored) : []
-}
-
-const saveExpensesToStorage = (expenses: Array<ExpenseWithItems>) => {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses))
-}
+import supabase from '@/utils/supabase'
 
 export interface GetExpensesFilters {
   date_from?: string
@@ -23,134 +10,234 @@ export interface GetExpensesFilters {
 export const getExpenses = async (
   filters?: GetExpensesFilters,
 ): Promise<Array<ExpenseWithItems>> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
-
-  let expenses = getExpensesFromStorage()
+  let query = supabase
+    .from('expenses')
+    .select(
+      `
+      *,
+      items:expense_items(*)
+    `,
+    )
+    .order('transaction_date', { ascending: false })
+    .order('created_at', { ascending: false })
 
   // Apply date filters
   if (filters?.date_from) {
-    expenses = expenses.filter(
-      (expense) => expense.transaction_date >= filters.date_from!,
-    )
+    query = query.gte('transaction_date', filters.date_from)
   }
   if (filters?.date_to) {
-    expenses = expenses.filter(
-      (expense) => expense.transaction_date <= filters.date_to!,
-    )
+    query = query.lte('transaction_date', filters.date_to)
   }
 
-  // Sort by transaction date descending
-  return expenses.sort(
-    (a, b) =>
-      new Date(b.transaction_date).getTime() -
-      new Date(a.transaction_date).getTime(),
+  const { data, error } = await query
+
+  if (error) throw error
+
+  return (
+    data?.map((expense: any) => ({
+      id: expense.id,
+      transaction_date: expense.transaction_date,
+      total_expense: Number(expense.total_expense),
+      items_count: expense.items_count,
+      remarks: expense.remarks || null,
+      created_at: expense.created_at,
+      updated_at: expense.updated_at || null,
+      items:
+        expense.items?.map((item: any) => ({
+          id: item.id,
+          expense_id: item.expense_id,
+          item_name: item.item_name,
+          cost: Number(item.cost),
+          created_at: item.created_at,
+          updated_at: item.updated_at || null,
+        })) || [],
+    })) || []
   )
 }
 
 export const getExpense = async (id: string): Promise<ExpenseWithItems> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 100))
+  const { data, error } = await supabase
+    .from('expenses')
+    .select(
+      `
+      *,
+      items:expense_items(*)
+    `,
+    )
+    .eq('id', id)
+    .single()
 
-  const expenses = getExpensesFromStorage()
-  const expense = expenses.find((e) => e.id === id)
+  if (error) throw error
 
-  if (!expense) {
-    throw new Error('Expense not found')
+  return {
+    id: data.id,
+    transaction_date: data.transaction_date,
+    total_expense: Number(data.total_expense),
+    items_count: data.items_count,
+    remarks: data.remarks || null,
+    created_at: data.created_at,
+    updated_at: data.updated_at || null,
+    items: (data.items || []).map((item: any) => ({
+      id: item.id,
+      expense_id: item.expense_id,
+      item_name: item.item_name,
+      cost: Number(item.cost),
+      created_at: item.created_at,
+      updated_at: item.updated_at || null,
+    })),
   }
-
-  return expense
 }
 
 export const addExpense = async (
   expense: ExpenseFormValues,
 ): Promise<ExpenseWithItems> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
+  // Validate that there's at least one item
+  if (!expense.items || expense.items.length === 0) {
+    throw new Error('At least one expense item is required')
+  }
 
-  const expenses = getExpensesFromStorage()
+  // Check if transaction date already exists
+  const { data: existingExpense, error: checkError } = await supabase
+    .from('expenses')
+    .select('id')
+    .eq('transaction_date', expense.transaction_date)
+    .single()
+
+  if (checkError && checkError.code !== 'PGRST116') {
+    // PGRST116 is "not found" error, which is expected if date doesn't exist
+    throw checkError
+  }
+
+  if (existingExpense) {
+    throw new Error(
+      `An expense for the date ${expense.transaction_date} already exists. Please use a different date or update the existing expense.`,
+    )
+  }
 
   const totalExpense = expense.items.reduce((sum, item) => sum + item.cost, 0)
 
-  const newExpense: ExpenseWithItems = {
-    id: `exp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    transaction_date: expense.transaction_date,
-    total_expense: totalExpense,
-    items_count: expense.items.length,
-    remarks: expense.remarks || null,
-    created_at: new Date().toISOString(),
-    updated_at: null,
-    items: expense.items.map((item, index) => ({
-      id: `item_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`,
-      expense_id: '',
-      item_name: item.item_name,
-      cost: item.cost,
-      created_at: new Date().toISOString(),
-      updated_at: null,
-    })),
+  // Insert expense
+  const { data: expenseData, error: expenseError } = await supabase
+    .from('expenses')
+    .insert({
+      transaction_date: expense.transaction_date,
+      total_expense: totalExpense,
+      items_count: expense.items.length,
+      remarks: expense.remarks || null,
+    })
+    .select()
+    .single()
+
+  if (expenseError) {
+    // Handle unique constraint violation
+    if (expenseError.code === '23505') {
+      throw new Error(
+        `An expense for the date ${expense.transaction_date} already exists. Please use a different date or update the existing expense.`,
+      )
+    }
+    throw expenseError
   }
 
-  // Update expense_id for items
-  if (newExpense.items) {
-    newExpense.items = newExpense.items.map((item) => ({
-      ...item,
-      expense_id: newExpense.id,
-    }))
+  // Insert expense items (should always have items due to validation above)
+  const itemsToInsert = expense.items.map((item) => ({
+    expense_id: expenseData.id,
+    item_name: item.item_name,
+    cost: item.cost,
+  }))
+
+  const { error: itemsError } = await supabase
+    .from('expense_items')
+    .insert(itemsToInsert)
+
+  if (itemsError) {
+    // If items fail to insert, delete the expense to maintain consistency
+    await supabase.from('expenses').delete().eq('id', expenseData.id)
+    throw itemsError
   }
 
-  expenses.push(newExpense)
-  saveExpensesToStorage(expenses)
-
-  return newExpense
+  // Fetch the complete expense with items
+  return getExpense(expenseData.id)
 }
 
 export const updateExpense = async ({
   id,
   ...expense
 }: ExpenseFormValues & { id: string }): Promise<ExpenseWithItems> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
+  // Validate that there's at least one item
+  if (!expense.items || expense.items.length === 0) {
+    throw new Error('At least one expense item is required')
+  }
 
-  const expenses = getExpensesFromStorage()
-  const index = expenses.findIndex((e) => e.id === id)
+  // Check if transaction date already exists for a different expense
+  const { data: existingExpense, error: checkError } = await supabase
+    .from('expenses')
+    .select('id')
+    .eq('transaction_date', expense.transaction_date)
+    .neq('id', id)
+    .single()
 
-  if (index === -1) {
-    throw new Error('Expense not found')
+  if (checkError && checkError.code !== 'PGRST116') {
+    // PGRST116 is "not found" error, which is expected if date doesn't exist
+    throw checkError
+  }
+
+  if (existingExpense) {
+    throw new Error(
+      `An expense for the date ${expense.transaction_date} already exists. Please use a different date or update the existing expense.`,
+    )
   }
 
   const totalExpense = expense.items.reduce((sum, item) => sum + item.cost, 0)
 
-  const updatedExpense: ExpenseWithItems = {
-    ...expenses[index],
-    transaction_date: expense.transaction_date,
-    total_expense: totalExpense,
-    items_count: expense.items.length,
-    remarks: expense.remarks || null,
-    updated_at: new Date().toISOString(),
-    items: expense.items.map((item, idx) => ({
-      id:
-        expenses[index].items?.[idx]?.id ||
-        `item_${Date.now()}_${idx}_${Math.random().toString(36).substr(2, 9)}`,
-      expense_id: id,
-      item_name: item.item_name,
-      cost: item.cost,
-      created_at:
-        expenses[index].items?.[idx]?.created_at || new Date().toISOString(),
+  // Delete existing items first
+  const { error: deleteError } = await supabase
+    .from('expense_items')
+    .delete()
+    .eq('expense_id', id)
+
+  if (deleteError) throw deleteError
+
+  // Insert new items
+  const itemsToInsert = expense.items.map((item) => ({
+    expense_id: id,
+    item_name: item.item_name,
+    cost: item.cost,
+  }))
+
+  const { error: itemsError } = await supabase
+    .from('expense_items')
+    .insert(itemsToInsert)
+
+  if (itemsError) throw itemsError
+
+  // Update expense (database trigger will also update totals, but we set them explicitly)
+  const { error: expenseError } = await supabase
+    .from('expenses')
+    .update({
+      transaction_date: expense.transaction_date,
+      total_expense: totalExpense,
+      items_count: expense.items.length,
+      remarks: expense.remarks || null,
       updated_at: new Date().toISOString(),
-    })),
+    })
+    .eq('id', id)
+
+  if (expenseError) {
+    // Handle unique constraint violation
+    if (expenseError.code === '23505') {
+      throw new Error(
+        `An expense for the date ${expense.transaction_date} already exists. Please use a different date or update the existing expense.`,
+      )
+    }
+    throw expenseError
   }
 
-  expenses[index] = updatedExpense
-  saveExpensesToStorage(expenses)
-
-  return updatedExpense
+  // Fetch the complete expense with items
+  return getExpense(id)
 }
 
 export const deleteExpense = async (id: string): Promise<void> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 300))
-
-  const expenses = getExpensesFromStorage()
-  const filtered = expenses.filter((e) => e.id !== id)
-  saveExpensesToStorage(filtered)
+  // Delete expense (items will be deleted automatically due to CASCADE)
+  const { error } = await supabase.from('expenses').delete().eq('id', id)
+  if (error) throw error
 }

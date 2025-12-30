@@ -30,9 +30,7 @@ export default function MainLayout({
           <div className="flex items-center justify-end gap-2">
             <SidebarTrigger className="text-gray-500" />
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
-            <p className="text-sm font-medium text-gray-500">
-              Welcome, Bro's
-            </p>
+            <p className="text-sm font-medium text-gray-500">Welcome, Bro's</p>
             <Separator orientation="vertical" className="bg-gray-500 h-4" />
             <p className="text-sm font-medium text-gray-500 ">
               {currentDateTime.toLocaleDateString()}{' '}
