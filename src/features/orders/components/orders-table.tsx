@@ -119,6 +119,13 @@ export const OrdersTable = memo(function OrdersTable({
       .reduce((sum, order) => sum + Number(order.total || 0), 0)
   }, [data])
 
+  // Calculate total delivery fee from completed orders only
+  const totalDeliveryFee = useMemo(() => {
+    return data
+      .filter((order) => order.status === 'completed')
+      .reduce((sum, order) => sum + Number(order.delivery_fee || 0), 0)
+  }, [data])
+
   // Format number in accounting format (comma-separated thousands)
   const formatAccounting = useCallback((num: number): string => {
     return num.toLocaleString('en-US', {
@@ -308,13 +315,21 @@ export const OrdersTable = memo(function OrdersTable({
 
   return (
     <div className="space-y-4">
-      {/* Total Sales and Orders Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Total Sales, Delivery Fee, and Orders Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-6 border border-stone-200 rounded-lg bg-gradient-to-r from-stone-50 to-stone-100">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-medium text-stone-600 mb-1">Total Sales</h3>
               <p className="text-3xl font-bold text-stone-900">₱{formatAccounting(totalSales)}</p>
+            </div>
+          </div>
+        </div>
+        <div className="p-6 border border-stone-200 rounded-lg bg-gradient-to-r from-stone-50 to-stone-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-stone-600 mb-1">Total Delivery Fee</h3>
+              <p className="text-3xl font-bold text-stone-900">₱{formatAccounting(totalDeliveryFee)}</p>
             </div>
           </div>
         </div>
