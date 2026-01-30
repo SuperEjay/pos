@@ -20,7 +20,6 @@ interface VariantDialogProps {
   }>
   basePrice: number | null
   onSelectVariant: (variant: any) => void
-  onSelectNoVariant: () => void
 }
 
 export const VariantDialog = memo(function VariantDialog({
@@ -28,9 +27,7 @@ export const VariantDialog = memo(function VariantDialog({
   onOpenChange,
   productName,
   variants,
-  basePrice,
   onSelectVariant,
-  onSelectNoVariant,
 }: VariantDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -67,20 +64,6 @@ export const VariantDialog = memo(function VariantDialog({
               </div>
             </button>
           ))}
-          <button
-            onClick={onSelectNoVariant}
-            className="w-full text-left p-4 rounded-lg border-2 border-stone-200 hover:border-stone-400 hover:bg-stone-50 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold">No variant</h4>
-                <p className="text-sm text-stone-600">Use base product price</p>
-              </div>
-              <span className="font-bold text-lg">
-                ₱{basePrice ? Number(basePrice).toFixed(2) : '0.00'}
-              </span>
-            </div>
-          </button>
         </div>
       </DialogContent>
     </Dialog>

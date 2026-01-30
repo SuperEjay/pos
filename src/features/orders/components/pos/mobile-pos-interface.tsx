@@ -236,30 +236,6 @@ export function MobilePOSInterface({
     ],
   )
 
-  // Handle no variant selection
-  const handleNoVariant = useCallback(() => {
-    if (selectedProductForVariant) {
-      const basePrice =
-        productsWithVariants[selectedProductForVariant.productId]?.price || 0
-      addToCart(
-        selectedProductForVariant.productId,
-        selectedProductForVariant.productName,
-        null,
-        null,
-        basePrice,
-      )
-      onShowVariantDialogChange(false)
-      onSelectedProductForVariantChange(null)
-      toast.success(`${selectedProductForVariant.productName} added to cart`)
-    }
-  }, [
-    selectedProductForVariant,
-    productsWithVariants,
-    addToCart,
-    onShowVariantDialogChange,
-    onSelectedProductForVariantChange,
-  ])
-
   // Update cart item quantity
   const updateQuantity = useCallback(
     (index: number, delta: number) => {
@@ -737,7 +713,6 @@ export function MobilePOSInterface({
           variants={selectedProductData.variants || []}
           basePrice={selectedProductData.price}
           onSelectVariant={handleVariantSelect}
-          onSelectNoVariant={handleNoVariant}
         />
       )}
     </div>

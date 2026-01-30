@@ -203,23 +203,6 @@ export function POSInterface() {
     [selectedProductForVariant, productsWithVariants, addToCart],
   )
 
-  // Handle no variant selection
-  const handleNoVariant = useCallback(() => {
-    if (selectedProductForVariant) {
-      const basePrice =
-        productsWithVariants[selectedProductForVariant.productId]?.price || 0
-      addToCart(
-        selectedProductForVariant.productId,
-        selectedProductForVariant.productName,
-        null,
-        null,
-        basePrice,
-      )
-      setShowVariantDialog(false)
-      setSelectedProductForVariant(null)
-    }
-  }, [selectedProductForVariant, productsWithVariants, addToCart])
-
   // Update cart item quantity
   const updateQuantity = useCallback((index: number, delta: number) => {
     setCart((prevCart) => {
@@ -438,7 +421,6 @@ export function POSInterface() {
           variants={selectedProductData.variants || []}
           basePrice={selectedProductData.price}
           onSelectVariant={handleVariantSelect}
-          onSelectNoVariant={handleNoVariant}
         />
       )}
     </div>

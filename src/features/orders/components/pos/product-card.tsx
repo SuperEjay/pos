@@ -35,11 +35,11 @@ export const ProductCard = memo(function ProductCard({
         <span className="text-sm md:text-base lg:text-lg font-bold text-stone-900">
           ₱{product.price ? Number(product.price).toFixed(2) : '0.00'}
         </span>
-        {product.variants_count && product.variants_count > 0 && (
+        {product.variants_count && product.variants_count > 0 ? (
           <Badge variant="secondary" className="text-xs">
             {product.variants_count} variants
           </Badge>
-        )}
+        ) : null}
       </div>
     </button>
   )
