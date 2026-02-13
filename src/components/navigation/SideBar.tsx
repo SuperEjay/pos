@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   BarChart3,
   ChefHat,
+  CalendarDays,
 } from 'lucide-react'
 import { useLocation } from '@tanstack/react-router'
 
@@ -54,6 +55,11 @@ const items = [
     title: 'Expenses',
     url: '/expenses',
     icon: Receipt,
+  },
+  {
+    title: 'Events',
+    url: '/events',
+    icon: CalendarDays,
   },
   {
     title: 'Reports',

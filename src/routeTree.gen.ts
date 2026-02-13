@@ -17,10 +17,13 @@ import { Route as PosIndexRouteImport } from './routes/pos/index'
 import { Route as PortionControlsIndexRouteImport } from './routes/portion-controls/index'
 import { Route as OrdersIndexRouteImport } from './routes/orders/index'
 import { Route as ExpensesIndexRouteImport } from './routes/expenses/index'
+import { Route as EventsIndexRouteImport } from './routes/events/index'
 import { Route as PortionControlsNewRouteImport } from './routes/portion-controls/new'
 import { Route as PortionControlsPortionControlIdRouteImport } from './routes/portion-controls/$portionControlId'
 import { Route as ExpensesNewRouteImport } from './routes/expenses/new'
 import { Route as ExpensesExpenseIdRouteImport } from './routes/expenses/$expenseId'
+import { Route as EventsNewRouteImport } from './routes/events/new'
+import { Route as EventsEventIdRouteImport } from './routes/events/$eventId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as manageproductsProductsIndexRouteImport } from './routes/(manage products)/products/index'
 import { Route as manageproductsCategoriesIndexRouteImport } from './routes/(manage products)/categories/index'
@@ -65,6 +68,11 @@ const ExpensesIndexRoute = ExpensesIndexRouteImport.update({
   path: '/expenses/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortionControlsNewRoute = PortionControlsNewRouteImport.update({
   id: '/portion-controls/new',
   path: '/portion-controls/new',
@@ -84,6 +92,16 @@ const ExpensesNewRoute = ExpensesNewRouteImport.update({
 const ExpensesExpenseIdRoute = ExpensesExpenseIdRouteImport.update({
   id: '/expenses/$expenseId',
   path: '/expenses/$expenseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsNewRoute = EventsNewRouteImport.update({
+  id: '/events/new',
+  path: '/events/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsEventIdRoute = EventsEventIdRouteImport.update({
+  id: '/events/$eventId',
+  path: '/events/$eventId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
@@ -108,10 +126,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/menu': typeof MenuRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/new': typeof EventsNewRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
   '/portion-controls/$portionControlId': typeof PortionControlsPortionControlIdRoute
   '/portion-controls/new': typeof PortionControlsNewRoute
+  '/events': typeof EventsIndexRoute
   '/expenses': typeof ExpensesIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/portion-controls': typeof PortionControlsIndexRoute
@@ -125,10 +146,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/menu': typeof MenuRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/new': typeof EventsNewRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
   '/portion-controls/$portionControlId': typeof PortionControlsPortionControlIdRoute
   '/portion-controls/new': typeof PortionControlsNewRoute
+  '/events': typeof EventsIndexRoute
   '/expenses': typeof ExpensesIndexRoute
   '/orders': typeof OrdersIndexRoute
   '/portion-controls': typeof PortionControlsIndexRoute
@@ -143,10 +167,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/menu': typeof MenuRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/events/$eventId': typeof EventsEventIdRoute
+  '/events/new': typeof EventsNewRoute
   '/expenses/$expenseId': typeof ExpensesExpenseIdRoute
   '/expenses/new': typeof ExpensesNewRoute
   '/portion-controls/$portionControlId': typeof PortionControlsPortionControlIdRoute
   '/portion-controls/new': typeof PortionControlsNewRoute
+  '/events/': typeof EventsIndexRoute
   '/expenses/': typeof ExpensesIndexRoute
   '/orders/': typeof OrdersIndexRoute
   '/portion-controls/': typeof PortionControlsIndexRoute
@@ -162,10 +189,13 @@ export interface FileRouteTypes {
     | '/'
     | '/menu'
     | '/demo/tanstack-query'
+    | '/events/$eventId'
+    | '/events/new'
     | '/expenses/$expenseId'
     | '/expenses/new'
     | '/portion-controls/$portionControlId'
     | '/portion-controls/new'
+    | '/events'
     | '/expenses'
     | '/orders'
     | '/portion-controls'
@@ -179,10 +209,13 @@ export interface FileRouteTypes {
     | '/'
     | '/menu'
     | '/demo/tanstack-query'
+    | '/events/$eventId'
+    | '/events/new'
     | '/expenses/$expenseId'
     | '/expenses/new'
     | '/portion-controls/$portionControlId'
     | '/portion-controls/new'
+    | '/events'
     | '/expenses'
     | '/orders'
     | '/portion-controls'
@@ -196,10 +229,13 @@ export interface FileRouteTypes {
     | '/'
     | '/menu'
     | '/demo/tanstack-query'
+    | '/events/$eventId'
+    | '/events/new'
     | '/expenses/$expenseId'
     | '/expenses/new'
     | '/portion-controls/$portionControlId'
     | '/portion-controls/new'
+    | '/events/'
     | '/expenses/'
     | '/orders/'
     | '/portion-controls/'
@@ -214,10 +250,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MenuRoute: typeof MenuRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  EventsEventIdRoute: typeof EventsEventIdRoute
+  EventsNewRoute: typeof EventsNewRoute
   ExpensesExpenseIdRoute: typeof ExpensesExpenseIdRoute
   ExpensesNewRoute: typeof ExpensesNewRoute
   PortionControlsPortionControlIdRoute: typeof PortionControlsPortionControlIdRoute
   PortionControlsNewRoute: typeof PortionControlsNewRoute
+  EventsIndexRoute: typeof EventsIndexRoute
   ExpensesIndexRoute: typeof ExpensesIndexRoute
   OrdersIndexRoute: typeof OrdersIndexRoute
   PortionControlsIndexRoute: typeof PortionControlsIndexRoute
@@ -286,6 +325,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExpensesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portion-controls/new': {
       id: '/portion-controls/new'
       path: '/portion-controls/new'
@@ -312,6 +358,20 @@ declare module '@tanstack/react-router' {
       path: '/expenses/$expenseId'
       fullPath: '/expenses/$expenseId'
       preLoaderRoute: typeof ExpensesExpenseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/new': {
+      id: '/events/new'
+      path: '/events/new'
+      fullPath: '/events/new'
+      preLoaderRoute: typeof EventsNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/$eventId': {
+      id: '/events/$eventId'
+      path: '/events/$eventId'
+      fullPath: '/events/$eventId'
+      preLoaderRoute: typeof EventsEventIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/tanstack-query': {
@@ -342,10 +402,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MenuRoute: MenuRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  EventsEventIdRoute: EventsEventIdRoute,
+  EventsNewRoute: EventsNewRoute,
   ExpensesExpenseIdRoute: ExpensesExpenseIdRoute,
   ExpensesNewRoute: ExpensesNewRoute,
   PortionControlsPortionControlIdRoute: PortionControlsPortionControlIdRoute,
   PortionControlsNewRoute: PortionControlsNewRoute,
+  EventsIndexRoute: EventsIndexRoute,
   ExpensesIndexRoute: ExpensesIndexRoute,
   OrdersIndexRoute: OrdersIndexRoute,
   PortionControlsIndexRoute: PortionControlsIndexRoute,
