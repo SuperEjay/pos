@@ -16,9 +16,19 @@ export const eventFormSchema = z.object({
   category: eventCategoryEnum,
   flavors: z
     .array(z.string().trim())
-    .optional()
     .default([])
     .transform((arr) => (arr || []).filter(Boolean)),
 })
 
-export type EventFormValues = z.infer<typeof eventFormSchema>
+export interface EventFormValues {
+  title: string
+  slug: string
+  location: string
+  pax: number
+  description: string
+  images: string[]
+  featured_image_index: number
+  event_date: string
+  category: 'wedding' | 'corporate' | 'private'
+  flavors: string[]
+}

@@ -73,7 +73,7 @@ export default function Events() {
         onConfirm={handleDeleteConfirm}
         title="Delete Event"
         description="This event will be removed from the website. This action cannot be undone."
-        confirmLabel="Delete"
+        confirmText="Delete"
         variant="destructive"
         isLoading={isDeleting}
       />

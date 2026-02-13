@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, PlusIcon, Star, TrashIcon, Upload } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
@@ -104,12 +104,11 @@ export function EventForm({ event: eventProp }: EventFormProps) {
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-    control,
     watch,
     setValue,
     getValues,
   } = useForm<EventFormValues>({
-    resolver: zodResolver(eventFormSchema),
+    resolver: zodResolver(eventFormSchema) as Resolver<EventFormValues>,
     defaultValues: {
       title: '',
       slug: '',
@@ -125,7 +124,6 @@ export function EventForm({ event: eventProp }: EventFormProps) {
   })
 
   const title = watch('title')
-  const slug = watch('slug')
   const userHasEditedSlugRef = useRef(false)
 
   // Auto-suggest slug from title when the user hasn't customized the slug
@@ -144,10 +142,17 @@ export function EventForm({ event: eventProp }: EventFormProps) {
     if (!event && !isLoading) userHasEditedSlugRef.current = false
   }, [event, isLoading])
 
-  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
-    control,
-    name: 'images',
-  })
+  // --- Images array (managed manually, not useFieldArray — images is string[], not object[]) ---
+  const images = watch('images')
+  const removeImage = useCallback(
+    (index: number) => {
+      const current = getValues('images')
+      const next = current.filter((_, i) => i !== index)
+      setValue('images', next.length > 0 ? next : [''])
+    },
+    [getValues, setValue],
+  )
+
   const imageInputRef = useRef<HTMLInputElement>(null)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -167,10 +172,23 @@ export function EventForm({ event: eventProp }: EventFormProps) {
     input.value = ''
   }, [])
 
-  const { fields: flavorFields, append: appendFlavor, remove: removeFlavor } = useFieldArray({
-    control,
-    name: 'flavors',
-  })
+  // --- Flavors array (managed manually) ---
+  const flavors = watch('flavors')
+  const appendFlavor = useCallback(
+    (value: string) => {
+      const current = getValues('flavors')
+      setValue('flavors', [...current, value])
+    },
+    [getValues, setValue],
+  )
+  const removeFlavor = useCallback(
+    (index: number) => {
+      const current = getValues('flavors')
+      const next = current.filter((_, i) => i !== index)
+      setValue('flavors', next.length > 0 ? next : [''])
+    },
+    [getValues, setValue],
+  )
 
   useEffect(() => {
     if (event && !isLoading) {
@@ -216,9 +234,9 @@ export function EventForm({ event: eventProp }: EventFormProps) {
         return
       }
     }
-    const flavors = data.flavors.filter(Boolean)
+    const cleanFlavors = data.flavors.filter(Boolean)
     const featured_image_index = Math.min(data.featured_image_index ?? 0, Math.max(0, allUrls.length - 1))
-    const payload = { ...data, images: allUrls, flavors, featured_image_index }
+    const payload = { ...data, images: allUrls, flavors: cleanFlavors, featured_image_index }
 
     if (isEditing && event) {
       updateEvent(
@@ -414,13 +432,12 @@ export function EventForm({ event: eventProp }: EventFormProps) {
               Event images
             </p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
-              {imageFields.map((field, i) => {
-                const url = watch(`images.${i}`)
+              {images.map((url, i) => {
                 const isFeatured = clampedFeaturedIndex === i
                 const hasValidImage = url && url.startsWith('http')
                 return (
                   <div
-                    key={field.id}
+                    key={`img-${i}-${url}`}
                     className={cn(
                       ALBUM_THUMB_CLASS,
                       isFeatured && 'ring-2 ring-primary ring-offset-2',
@@ -455,7 +472,7 @@ export function EventForm({ event: eventProp }: EventFormProps) {
                       size="icon"
                       className="absolute right-1.5 top-1.5 h-7 w-7 shadow"
                       onClick={() => {
-                        const newMaxIndex = Math.max(0, imageFields.length - 2 + pendingFiles.length)
+                        const newMaxIndex = Math.max(0, images.length - 2 + pendingFiles.length)
                         const newFeatured =
                           i < featuredIndex
                             ? featuredIndex - 1
@@ -465,7 +482,7 @@ export function EventForm({ event: eventProp }: EventFormProps) {
                         setValue('featured_image_index', Math.max(0, newFeatured))
                         removeImage(i)
                       }}
-                      disabled={imageFields.length <= 1 && pendingFiles.length === 0}
+                      disabled={images.length <= 1 && pendingFiles.length === 0}
                     >
                       <TrashIcon className="h-3.5 w-3.5" />
                     </Button>
@@ -473,29 +490,29 @@ export function EventForm({ event: eventProp }: EventFormProps) {
                 )
               })}
               {pendingFiles.map((file, pendingIndex) => {
-              const i = imageFields.length + pendingIndex
-              const isFeatured = clampedFeaturedIndex === i
-              return (
-                <PendingImageThumb
-                  key={`pending-${pendingIndex}-${file.name}`}
-                  file={file}
-                  isFeatured={isFeatured}
-                  onSetFeatured={() => setValue('featured_image_index', i)}
-                  onRemove={() => {
-                    const newMaxIndex = Math.max(0, imageFields.length + pendingFiles.length - 2)
-                    const newFeatured =
-                      i < featuredIndex
-                        ? featuredIndex - 1
-                        : i === featuredIndex
-                          ? Math.min(featuredIndex, Math.max(0, newMaxIndex))
-                          : featuredIndex
-                    setValue('featured_image_index', Math.max(0, newFeatured))
-                    setPendingFiles((prev) => prev.filter((_, idx) => idx !== pendingIndex))
-                  }}
-                  canRemove={imageFields.length + pendingFiles.length > 1}
-                />
-              )
-            })}
+                const i = images.length + pendingIndex
+                const isFeatured = clampedFeaturedIndex === i
+                return (
+                  <PendingImageThumb
+                    key={`pending-${pendingIndex}-${file.name}`}
+                    file={file}
+                    isFeatured={isFeatured}
+                    onSetFeatured={() => setValue('featured_image_index', i)}
+                    onRemove={() => {
+                      const newMaxIndex = Math.max(0, images.length + pendingFiles.length - 2)
+                      const newFeatured =
+                        i < featuredIndex
+                          ? featuredIndex - 1
+                          : i === featuredIndex
+                            ? Math.min(featuredIndex, Math.max(0, newMaxIndex))
+                            : featuredIndex
+                      setValue('featured_image_index', Math.max(0, newFeatured))
+                      setPendingFiles((prev) => prev.filter((_, idx) => idx !== pendingIndex))
+                    }}
+                    canRemove={images.length + pendingFiles.length > 1}
+                  />
+                )
+              })}
             </div>
           </div>
           {errors.images?.root && (
@@ -516,8 +533,8 @@ export function EventForm({ event: eventProp }: EventFormProps) {
               Add
             </Button>
           </div>
-          {flavorFields.map((field, i) => (
-            <div key={field.id} className="flex gap-2">
+          {flavors.map((_, i) => (
+            <div key={`flavor-${i}`} className="flex gap-2">
               <Input
                 {...register(`flavors.${i}`)}
                 placeholder="e.g. Vanilla Latte"
@@ -527,7 +544,7 @@ export function EventForm({ event: eventProp }: EventFormProps) {
                 variant="ghost"
                 size="icon"
                 onClick={() => removeFlavor(i)}
-                disabled={flavorFields.length <= 1}
+                disabled={flavors.length <= 1}
               >
                 <TrashIcon className="h-4 w-4" />
               </Button>
